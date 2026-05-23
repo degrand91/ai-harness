@@ -26,14 +26,13 @@ Agent({
 })
 ```
 
-## Provider isolation (v0.5)
+## Provider isolation (v0.3)
 
-The strongest version of Creator-Verifier puts the Worker and the Validator on **different providers** so the Validator doesn't inherit Worker training-data biases. This isn't trivial inside Claude Code — we approximate it via:
+The strongest version of Creator-Verifier puts the Worker and the Validator on **different providers** so the Validator doesn't inherit Worker training-data biases. This is shipped in v0.3 via the two-agent-file pattern — see [`protocols/multi-provider-validation.md`](multi-provider-validation.md) for the full design.
 
-1. **Different models within Claude** (Opus vs Sonnet vs Haiku) — partial isolation.
-2. **MCP integration** with an external provider's CLI for the Validator role — full isolation, planned for v0.5.
+The mechanism: two agent files (`scrutiny-validator.md` and `scrutiny-validator-external.md`), selected at scrutiny-spawn time by inspecting the `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` env var. External path is opt-in; default path (Haiku, no MCP) is unchanged.
 
-Until v0.5, isolate via:
+Approximate isolation via different model tiers remains a complementary defence — not a substitute:
 - Different model tier (Worker = Sonnet, Validator = Haiku).
 - Fresh context per role (already done).
 - Strict role prompts that prevent the Validator from inheriting Worker reasoning (already done).
