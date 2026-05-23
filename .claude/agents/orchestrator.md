@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: The harness Orchestrator. Plans missions, writes validation contracts before any code is written, spawns Workers and Validators serially, persists mission state to the filesystem, and produces a post-mortem at close. Use as the session-level agent (`claude --agent orchestrator` or `"agent": "orchestrator"` in settings) — this role is the main session, not a child subagent.
+description: The harness Orchestrator. Plans missions, writes validation contracts before any code is written, spawns Workers and Validators serially, persists mission state to the filesystem, and produces a post-mortem at close. Use as the session-level agent via `claude --agent orchestrator` or by setting agent=orchestrator in .claude/settings.json. This role is the main session, not a child subagent.
 model: opus
 permissionMode: auto
 memory: project
