@@ -2,6 +2,22 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-05-23
+
+### Added
+- `.claude/skills/explore/` — `/explore` skill that accepts one or more questions, fans out a dedicated `explorer` subagent per question in parallel, and synthesises the results into a single planning brief.
+- `protocols/parallel-exploration.md` — formal rules for when the Orchestrator may fan out explorer subagents: read-only work only, max concurrency guidelines, synthesis step required before any Worker is spawned.
+- `.claude/settings.json` PreToolUse hook on the `Agent` tool — blocks any attempt to spawn a non-`explorer` subagent concurrently, enforcing the serial-execution rule for Workers and Validators at the shell level.
+
+### Changed
+- `CLAUDE.md` section 3 updated to reference the new `parallel-exploration.md` protocol and the `/explore` skill.
+- `protocols/serial-execution.md` cross-references `protocols/parallel-exploration.md` for the fan-out carve-out.
+
+### Known gaps
+- `/explore` skill is registered in `.claude/skills/` but is **not invocable in the current session** — the skill registry is session-static (the same limitation documented for Scout in v0.4); it will be available from the next fresh session onward.
+- The v0.5 exit criterion — "plan phase uses ≥3 parallel explorers and produces a measurably better plan" — is **infrastructure ready, real-world verification deferred**. Demonstrating the improvement requires a complex mission whose planning phase exercises the fanout; this will be tracked as a follow-up against the first qualifying mission.
+- PreToolUse hook IS live and verified (exit code 0 in contract checks).
+
 ## [0.4.0] — 2026-05-23
 
 ### Added

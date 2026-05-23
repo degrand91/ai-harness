@@ -62,7 +62,9 @@ Shipped 2026-05-23 — Scout subagent (`scout.md`), `scripts/learnings-index.sh`
 
 ---
 
-## v0.5 — Parallel exploration, formalized
+## v0.5 — Parallel exploration, formalized ✅ shipped
+
+Shipped 2026-05-23 — `/explore` skill, `protocols/parallel-exploration.md`, PreToolUse hook enforcing explorer-only concurrency, `protocols/multi-provider-validation.md` cross-referenced.
 
 **Goal**: realise the "parallelism only for read-only work" principle with a real fanout pattern.
 
