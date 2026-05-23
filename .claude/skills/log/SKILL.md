@@ -19,10 +19,21 @@ $ARGUMENTS
 Append a single line to the most recent mission's `log.md` in this exact format:
 
 ```
-[<UTC timestamp>] $ARGUMENTS
+[<UTC timestamp>] [session=<CLAUDE_SESSION_ID>] $ARGUMENTS
 ```
 
-Use the Bash `printf '%s\n' "[<ts>] <msg>" >> missions/<id>/log.md` pattern (single-quoted format, double-quoted line, properly escaped).
+If the `CLAUDE_SESSION_ID` environment variable is set, include a `[session=<value>]` tag after the timestamp. If it is unset or empty, omit the tag entirely (do not write `[session=]`).
+
+Use the Bash `printf '%s\n' "[<ts>] <msg>" >> missions/<id>/log.md` pattern (single-quoted format, double-quoted line, properly escaped). Example with session stamping:
+
+```bash
+SESSION="${CLAUDE_SESSION_ID:-}"
+if [ -n "$SESSION" ]; then
+  printf '[%s] [session=%s] %s\n' "$NOW" "$SESSION" "$MSG" >> missions/<id>/log.md
+else
+  printf '[%s] %s\n' "$NOW" "$MSG" >> missions/<id>/log.md
+fi
+```
 
 If `$ARGUMENTS` is empty, ask the caller for a message — don't append empty entries.
 

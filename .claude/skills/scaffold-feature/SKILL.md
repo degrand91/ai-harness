@@ -38,6 +38,7 @@ Scaffold a new feature folder. Use the Write tool — no shell script.
      "feature_id": "F<num>",
      "slug": "<slug>",
      "state": "pending",
+     "session_id": "<value of CLAUDE_SESSION_ID env var, or \"unknown\" if unset>",
      "color": null,
      "worker":       { "started_at": null, "completed_at": null, "model": null, "handoff_path": null, "commit_shas": [] },
      "scrutiny":     { "started_at": null, "completed_at": null, "model": null, "verdict": null, "path": null },
@@ -45,6 +46,7 @@ Scaffold a new feature folder. Use the Write tool — no shell script.
      "followups": []
    }
    ```
+   Set `session_id` to the value of `CLAUDE_SESSION_ID` if the environment variable is available; otherwise use `"unknown"`.
 
 4. **Append to the mission log** (`missions/$mission_id/log.md`):
    ```

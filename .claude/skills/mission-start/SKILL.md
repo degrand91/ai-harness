@@ -48,11 +48,11 @@ missions/<id>/
 ├── plan.md          ← one-line stub ("populate from templates/plan.md")
 ├── contract.md      ← one-line stub ("populate from templates/validation-contract.md")
 ├── status.json      ← state="intake", started_at=<now UTC>, see templates/status-schema.md
-├── log.md           ← one entry: "[<now>] state=intake — folder created. goal: <verbatim>"
+├── log.md           ← one entry: "[<now>] [session=${CLAUDE_SESSION_ID:-unknown}] state=intake — folder created. goal: <verbatim>"
 └── features/        ← empty (subdirs created per feature later)
 ```
 
-`status.json` shape: see `templates/status-schema.md`. Default the `models` block (orchestrator=opus, worker_default=sonnet, scrutiny_validator_default=haiku, user_testing_validator_default=sonnet, explorer_default=haiku). Token counters start at 0.
+`status.json` shape: see `templates/status-schema.md`. Default the `models` block (orchestrator=opus, worker_default=sonnet, scrutiny_validator_default=haiku, user_testing_validator_default=sonnet, explorer_default=haiku). Token counters start at 0. If the environment variable `CLAUDE_SESSION_ID` is set, include `"session_id": "<value>"` in the status.json; otherwise set it to `"unknown"`.
 
 ## 4. Author `mission.md`
 

@@ -36,6 +36,7 @@ esac
 # Compute a short relative path for the log line.
 REL="${FILE_PATH#${HARNESS_ROOT}/missions/${MISSION_ID}/}"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-printf '[%s] state mutation — %s edited\n' "$NOW" "$REL" >> "$LOG_FILE"
+SESSION="${CLAUDE_SESSION_ID:-unknown}"
+printf '[%s] [session=%s] state mutation — %s edited\n' "$NOW" "$SESSION" "$REL" >> "$LOG_FILE"
 
 exit 0
