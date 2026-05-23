@@ -2,6 +2,19 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] — 2026-05-23
+
+### Fixed
+
+- `docs/faq.md` referenced `learnings/anti-patterns/recursive-mission-stability-guards.md` (wrong path; file is at `learnings/patterns/recursive-mission-stability-guards.md`).
+- `docs/troubleshooting.md` "Worker hits permissions block when writing to .claude/" misdiagnosed the real failure mode. Replaced with `Auto-mode classifier blocks git operations on .claude/` reflecting what was actually seen in v0.9 F002.
+
+### Added
+
+- `docs/glossary.md` entries: Checkpoint, Anti-template gate, `/explore` (skill), `scrutiny-validator-external`, `HARNESS_EXTERNAL_VALIDATOR_PROVIDER`, `claude-plugin.json`, Mission chain (resolves Chain name collision with the existing Follow-up chain entry).
+- `docs/troubleshooting.md` entry: "New skills or agents aren't dynamically loadable in the current session" — covers the session-static skill/agent registry behavior (Scout, /explore, notify-at-gate all hit this in the v0.3-v1.0 chain).
+- `docs/faq.md` nuance to the approval-gate paragraph: documents blanket-pre-approval pattern.
+
 ## [1.0.0] — 2026-05-23
 
 ### Added
