@@ -49,6 +49,24 @@ fi
 
 Pass `model: "haiku"` as a safe fallback; the external agent's frontmatter overrides it when relevant. Full design: [protocols/multi-provider-validation.md](../../protocols/multi-provider-validation.md).
 
+## Defensive verdict parsing
+
+When persisting a validator verdict (Scrutiny or User-Testing), strip any text preceding the first `## Feature:` or `## Verdict:` heading and any text after the last section's closing line before writing to `missions/<id>/features/<n>/scrutiny.md` (or `user-test.md`).
+
+**Rationale:** Validator role prompts are strict — scrutiny-validator.md already has a "Format rule (zero tolerance)" section — but Haiku occasionally emits a prose preamble regardless. Defensive parsing on the orchestrator side is the right place for the fix; tightening words further is not.
+
+**Example:** If the validator's reply begins with:
+
+```
+Perfect. All assertions pass.
+
+## Feature: F003 — add-oauth-routes
+```
+
+strip any text preceding the first `## Feature:` heading so that only `## Feature: F003 — add-oauth-routes` onward is persisted.
+
+This does **not** modify the validator output returned via the Agent tool — it only affects what's written to disk.
+
 ## The five strategies, mapped
 
 This harness uses four of the five Factory Missions strategies. **Direct Communication is intentionally excluded** (state fragments). The four you use:
