@@ -1,24 +1,36 @@
 # Team
 
-The harness operates with a fixed team of agent roles. Each role has a prompt in `agents/`, a protocol in `protocols/`, and is spawned via the Claude Code Agent tool with the right model and tools.
+The harness operates with a fixed team of agent roles. Each role is a real Claude Code subagent at `.claude/agents/<name>.md` (YAML frontmatter + system prompt). Each is spawned via the Agent tool with the matching `subagent_type`.
 
 ## Roster
 
-| Role | Lifetime | Model (default) | Tools | Reads | Writes | Spawned by |
-|------|----------|-----------------|-------|-------|--------|------------|
-| **Orchestrator** | Mission-long | Opus | Full Claude Code | Everything in `missions/<id>/` + `learnings/` | `mission.md`, `plan.md`, `contract.md`, `status.json`, `log.md`, follow-up specs, `post-mortem.md` | User (you) |
-| **Worker** | One feature | Sonnet | Full (Read/Write/Edit/Bash/Grep/Glob) | Feature spec + contract slice + previous handoff | Application code + one git commit + structured handoff | Orchestrator |
-| **Scrutiny Validator** | One feature | Sonnet or Haiku | Read/Grep/Glob/Bash | Contract slice + diff | Verdict file (`scrutiny.md`) | Orchestrator |
-| **User-Testing Validator** | One feature | Sonnet | Bash (launch app) + browser automation | User-facing contract slice + launch recipe | Verdict file (`user-test.md`) + evidence | Orchestrator |
-| **Explorer** | One question | Haiku | Read/Grep/Glob/WebFetch | Whatever it can find | Returns findings; no FS writes | Orchestrator |
-| **Sub-Orchestrator** *(rare)* | Subprogram | Opus | Full | Parent mission state | Subprogram state | Orchestrator |
+| Role | `subagent_type` | Lifetime | Default model | Tools | Memory |
+|------|-----------------|----------|---------------|-------|--------|
+| **Orchestrator** | (session-level via `.claude/settings.json:agent`) | Mission-long | Opus | Full Claude Code | `project` — `.claude/agent-memory/orchestrator/` |
+| **Worker** | `worker` | One feature | Sonnet | Read, Write, Edit, Bash, Grep, Glob | none (fresh per spawn) |
+| **Scrutiny Validator** | `scrutiny-validator` | One feature | Haiku | Read, Grep, Glob, Bash (no Write/Edit) | none (adversarial) |
+| **User-Testing Validator** | `user-testing-validator` | One feature | Sonnet | Bash, Read, Grep, Glob (no Write/Edit) | none |
+| **Explorer** | `explorer` | One question | Haiku | Read, Grep, Glob, WebFetch, WebSearch (no Bash, no Write/Edit) | none |
+
+## How to spawn one
+
+You **never inline a role prompt**. The system prompt is loaded from `.claude/agents/<name>.md` automatically.
+
+```text
+Agent(
+  subagent_type: "worker",
+  model: "sonnet",
+  description: "Worker — F003 add-oauth-routes",
+  prompt: <feature spec> + <contract slice> + <previous handoff if any>
+)
+```
 
 ## Why this team works
 
-- **One Orchestrator** — single source of strategic intent. No coordination chaos.
+- **One Orchestrator** — single source of strategic intent. The `agent: orchestrator` setting makes the main session take on the role automatically.
 - **Short-lived Workers** — fresh context per feature, no accumulated bias, codebase inheritance via git.
-- **Adversarial Validators** — never see the Worker's frame; the contract is the only definition of done.
-- **Cheap Explorers** — parallel reads during planning; killed before any feature spawns.
+- **Adversarial Validators** — never see the Worker's frame; the contract is the only definition of done. Tool denylist enforces no-edit at the Claude Code permission layer.
+- **Cheap Explorers** — parallel reads during planning; killed before any feature spawns. Bash disabled, so they can't shell out.
 - **No peer-to-peer chat** — all coordination is through filesystem state (the Broadcast pattern from the Missions taxonomy).
 
 ## How agents communicate (and don't)
@@ -73,7 +85,8 @@ The harness operates with a fixed team of agent roles. Each role has a prompt in
 | The day-one operating manual | [CLAUDE.md](CLAUDE.md) |
 | The design model | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Each role's spec | `protocols/<role>.md` |
-| Each role's prompt | `agents/<role>.md` |
+| Each role's actual prompt | `.claude/agents/<role>.md` |
+| Each slash-skill | `.claude/skills/<name>/SKILL.md` |
 | How a mission flows end-to-end | [protocols/lifecycle.md](protocols/lifecycle.md) |
 | How handoffs work | [protocols/handoff.md](protocols/handoff.md) |
 | Why one feature at a time | [protocols/serial-execution.md](protocols/serial-execution.md) |

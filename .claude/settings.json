@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "agent": "orchestrator",
+  "includeCoAuthoredBy": false,
+  "includeGitInstructions": true,
+
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Read(/tmp/**)",
+      "Edit(./missions/**)",
+      "Edit(./learnings/**)",
+      "Write(./missions/**)",
+      "Write(./learnings/**)",
+      "Bash(./scripts/status.sh *)",
+      "Bash(jq *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(date *)",
+      "Bash(printf *)",
+      "Bash(find ./missions/**)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(test *)",
+      "Bash(grep *)",
+      "Bash(mkdir -p ./missions/**)",
+      "Agent(worker)",
+      "Agent(scrutiny-validator)",
+      "Agent(user-testing-validator)",
+      "Agent(explorer)",
+      "Skill(mission-start)",
+      "Skill(mission-status)",
+      "Skill(mission-resume)",
+      "Skill(mission-review)",
+      "Skill(mission-list)",
+      "Skill(scaffold-feature)",
+      "Skill(contract-check)",
+      "Skill(log)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf .)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(curl http://*)",
+      "Edit(./contract.md)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git reset --hard *)",
+      "Bash(git rebase *)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-write-mission-state.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-no-red-status.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start-inject-status.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent-stop-record.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

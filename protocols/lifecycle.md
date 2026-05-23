@@ -6,7 +6,7 @@ The state machine every mission moves through. The Orchestrator owns transitions
 
 | State | Entered when | Exit transitions |
 |-------|--------------|------------------|
-| `intake` | Orchestrator scaffolds the mission folder (see [commands/mission-start.md](../commands/mission-start.md)) | → `planning` |
+| `intake` | Orchestrator scaffolds the mission folder via [/mission-start](../.claude/skills/mission-start/SKILL.md) | → `planning` |
 | `planning` | Orchestrator starts reading the mission | → `contract` |
 | `contract` | Plan exists | → `awaiting_approval` |
 | `awaiting_approval` | Contract is drafted | → `executing` (user approves) or `intake` (user revises) |
@@ -67,4 +67,4 @@ Optional checkpoints (off by default, enable via `status.json.checkpoints`):
 
 ## Resumability
 
-Any new Claude session reads `status.json` + the last entry in `log.md` and can pick up. See [commands/mission-resume.md](../commands/mission-resume.md).
+Any new Claude session reads `status.json` + the last entry in `log.md` and can pick up. See [/mission-resume](../.claude/skills/mission-resume/SKILL.md). The `SessionStart` hook also injects active-mission context automatically.

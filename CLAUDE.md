@@ -1,8 +1,15 @@
 # CLAUDE.md — Harness Operating Manual
 
-This file is the operating manual for any Claude Code session running inside `/Users/stefanodegrandis/projects/ai/harness/`. Read it on entry.
+This file is the operating manual for any Claude Code session running inside `/Users/stefanodegrandis/projects/ai/harness/`. It is loaded automatically on session start.
 
 The harness is a Factory-Missions-style autonomous coding system. The user defines **what**. You handle **how**.
+
+The harness uses native Claude Code surfaces wherever possible:
+
+- **`.claude/agents/*.md`** — registered subagents (`worker`, `scrutiny-validator`, `user-testing-validator`, `explorer`, `orchestrator`). Spawn via the Agent tool with `subagent_type: "worker"` — no inline prompt needed.
+- **`.claude/skills/<name>/SKILL.md`** — invokable as `/mission-start`, `/mission-status`, `/mission-resume`, `/mission-review`, `/mission-list`, `/scaffold-feature`, `/contract-check`, `/log`.
+- **`.claude/settings.json`** — sets `agent: orchestrator` so a fresh session **is** the Orchestrator. Also defines permissions and hooks.
+- **`.claude/hooks/*.sh`** — `PostToolUse` auto-appends mission `log.md`; `Stop` blocks ending with red status; `SessionStart` injects active-mission context; `SubagentStop` records timings.
 
 ---
 
@@ -12,11 +19,11 @@ When the user speaks to you inside this folder, classify the request:
 
 | Signal | Mode |
 |--------|------|
-| User describes a software goal ("build", "add", "fix", "migrate", "refactor X across Y") | **Mission mode** |
+| User describes a software goal ("build", "add", "fix", "migrate", "refactor X across Y") | **Mission mode** → `/mission-start` |
 | User asks about the harness itself, its docs, or wants to change it | **Meta mode** |
 | User asks a one-off question | **Aside mode** (answer briefly, do not start a mission) |
 
-In **Mission mode**, follow Sections 2–7 of this file. Do not skip steps.
+In **Mission mode**, follow Sections 2–7 of this file.
 
 ---
 
@@ -32,18 +39,17 @@ INTAKE ──▶ PLAN ──▶ CONTRACT ──▶ APPROVAL GATE ──▶ FEATU
 
 Each phase has a protocol document in `protocols/`. Read the relevant one before acting in that phase.
 
-### 2.1 Intake
-- Convert the user's "what" into a `mission.md` written in their words.
+### 2.1 Intake — use `/mission-start <goal>`
+- The skill captures the user's goal verbatim into `missions/<id>/mission.md`.
 - Ask only the questions you genuinely cannot infer. Auto Mode is on — default to making the call.
 - Resolve all relative dates to absolute dates.
 
-### 2.2 Plan (Orchestrator hat)
-- Read [protocols/orchestrator.md](protocols/orchestrator.md).
-- Read past `learnings/patterns/` entries — they exist to make this run better than the last one.
+### 2.2 Plan
+- Read `learnings/patterns/` and your own `.claude/agent-memory/orchestrator/MEMORY.md` — they exist to make this run better than the last one.
 - Decompose into **features** ordered for serial execution. Earlier features must not depend on later ones.
-- Identify what's safe to parallelise (read-only exploration only — see [protocols/serial-execution.md](protocols/serial-execution.md)).
+- Fan out **Explorer subagents in parallel** for read-only repo mapping (see [protocols/serial-execution.md](protocols/serial-execution.md)). Use the Agent tool with `subagent_type: "explorer"`.
 
-### 2.3 Validation contract (still Orchestrator hat)
+### 2.3 Validation contract
 - Read [protocols/validation-contract.md](protocols/validation-contract.md).
 - Write `contract.md` **before any feature work**. The contract is the only definition of "done."
 - It must contain executable assertions: commands to run, expected exit codes, observable behaviors. Not vibes.
@@ -55,42 +61,45 @@ Each phase has a protocol document in `protocols/`. Read the relevant one before
 ### 2.5 Feature loop (one feature at a time)
 For each feature in order:
 
-1. **Spawn a Worker subagent** via the Agent tool with the [agents/worker.md](agents/worker.md) prompt + the feature spec + the contract excerpt covering that feature.
-   - Worker has **fresh context**. It does not see the orchestrator's chat history.
-   - Worker implements, commits via git, returns a structured handoff (see [templates/handoff-report.md](templates/handoff-report.md)).
-2. **Record the handoff** in `missions/<id>/features/<n>/handoff.md`.
-3. **Spawn a Scrutiny Validator subagent** with [agents/scrutiny-validator.md](agents/scrutiny-validator.md). It only sees the contract, the diff, and the test commands. It does **not** see the worker's reasoning.
-4. **If the feature has user-observable behavior**, spawn a **User-Testing Validator** with [agents/user-testing-validator.md](agents/user-testing-validator.md). It launches the app and exercises the flow.
-5. **Decide**:
-   - All validators green → mark feature complete, append to `log.md`, move to next feature.
-   - Any validator red → open a follow-up feature, re-enter the loop. Do **not** patch the original feature in place.
-6. **Broadcast**: update `status.json` and `log.md` after every step.
+1. **Scaffold the feature folder** with `/scaffold-feature <mission-id> <num> <slug>`.
+2. **Spawn a Worker subagent** via the Agent tool:
+   ```
+   subagent_type: "worker"
+   model: "sonnet"   (or "haiku" for trivial features)
+   description: "Worker — F003 add-oauth-routes"
+   prompt: <feature spec> + <contract slice> + <previous handoff if any>
+   ```
+   The Worker's system prompt is loaded from `.claude/agents/worker.md` automatically. **Do not inline the worker.md content** — pass only the feature-specific task.
+3. **Record the handoff** to `missions/<id>/features/<n>/handoff.md`.
+4. **Spawn a Scrutiny Validator subagent** with `subagent_type: "scrutiny-validator"`. Pass the contract slice and the diff. It does **not** see the worker's reasoning.
+5. **If the feature has user-observable behavior**, spawn a **User-Testing Validator** with `subagent_type: "user-testing-validator"`. Pass the user-facing contract slice and the launch recipe.
+6. **Decide**:
+   - All validators green → mark feature complete. Advance.
+   - Any validator red → open a follow-up feature using the Validator's follow-up spec. Re-enter the loop. Do **not** patch the original feature in place.
+7. **Broadcast**: `status.json` and `log.md` get updated. The `PostToolUse` hook auto-appends `log.md` on any mission-state file edit, but you still own correctness — set `status.json` deliberately.
 
-### 2.6 Close
-- Run the full contract one final time as integration check.
-- Write `post-mortem.md` (see [templates/post-mortem.md](templates/post-mortem.md)).
-- Distill any reusable lesson into `learnings/patterns/<slug>.md`.
-- Report to the user.
+### 2.6 Close — use `/mission-review`
+- The skill runs the full contract one final time as integration check.
+- Authors `post-mortem.md` (template at `templates/post-mortem.md`).
+- Distills at least one reusable lesson into `learnings/patterns/<slug>.md` or `learnings/anti-patterns/<slug>.md`.
+- The `Stop` hook will refuse to end the session if any mission has red status — so cleanup is enforced.
 
 ---
 
-## 3. Roles ≡ subagents
+## 3. Subagent quick reference
 
-You are always the **Orchestrator**. Workers and Validators are **subagents** spawned with the Agent tool. Never let the Orchestrator implement features directly — fresh context per feature is the whole point.
+You spawn these via the Agent tool. Their system prompts live in `.claude/agents/`. Pass **only** the task in `prompt` — the role prompt is loaded automatically.
 
-Use `general-purpose` as the subagent type when you need full tools (Worker). Use read-only agents (`Explore`, `code-reviewer`) for Scrutiny when their tool set is sufficient.
+| `subagent_type` | When to spawn | Default model | Tools |
+|---|---|---|---|
+| `worker` | Implement one feature | sonnet | full implementation set |
+| `scrutiny-validator` | After every feature handoff | haiku | read-only + Bash (no Write/Edit) |
+| `user-testing-validator` | After scrutiny, if user-observable | sonnet | Bash + Read (no Write/Edit) |
+| `explorer` | Parallel read-only recon during planning | haiku | Read/Grep/Glob/WebFetch (no Bash, no Write/Edit) |
 
-Model routing — pick per role:
+Workers and Validators have **fresh context** every spawn. They do not see your chat history.
 
-| Role | Default model | Why |
-|------|---------------|-----|
-| Orchestrator (you) | Opus | Slow careful reasoning, strategic |
-| Worker | Sonnet | Code fluency, fast generation |
-| Scrutiny Validator | Sonnet or Haiku | Strict instruction-following on a contract |
-| User-Testing Validator | Sonnet | Needs tool use (browser, app) |
-| Exploration subagent | Haiku | Cheap parallel read-only work |
-
-See [protocols/model-routing.md](protocols/model-routing.md).
+Model routing rules: [protocols/model-routing.md](protocols/model-routing.md).
 
 ---
 
@@ -111,12 +120,14 @@ missions/2026-05-23-add-oauth/
 │   │   ├── handoff.md
 │   │   ├── scrutiny.md
 │   │   ├── user-test.md
-│   │   └── status.json
+│   │   ├── status.json
+│   │   └── evidence/
 │   └── 002-.../
-└── post-mortem.md      # written at close
+├── integration-check.md  # written by /contract-check
+└── post-mortem.md        # written at close by /mission-review
 ```
 
-Update `status.json` and append to `log.md` after every state transition. These are how you maintain coherence across days.
+`status.json` and `log.md` are the **broadcast channel**. The `PostToolUse` hook appends to `log.md` automatically on every edit inside `missions/<id>/`. You still own `status.json` writes.
 
 ---
 
@@ -139,31 +150,29 @@ The harness uses four of the five Missions strategies. Direct Communication is i
 Features run **one at a time**. The next worker inherits the codebase **via git**, not via shared memory. Read [protocols/serial-execution.md](protocols/serial-execution.md).
 
 Parallelism is allowed only for:
-- Codebase exploration (read-only)
+- Codebase exploration (read-only, via `explorer` subagents — these are the **only** subagents you may spawn concurrently)
 - API research / doc reads
-- Validation reviews of completed features
+- Scrutiny + User-Testing Validators on the **same** feature
 
-If you find yourself wanting to run two workers in parallel, you are wrong. Re-read this section.
+If you find yourself wanting to run two Workers in parallel, you are wrong. Re-read this section.
 
 ---
 
 ## 7. Handoffs
 
-Every Worker subagent must return a structured handoff matching [templates/handoff-report.md](templates/handoff-report.md):
+Every Worker subagent must return a structured handoff matching [templates/handoff-report.md](templates/handoff-report.md). The worker's role prompt enforces this — its reply must begin with `## Feature:`.
 
-- What was implemented
-- What was left undone
-- Commands run + exit codes
-- Issues discovered
-- Whether procedures were followed
-
-If a worker returns free-form text, treat the feature as incomplete and re-spawn with a stricter prompt.
+If a Worker returns free-form text without the required sections, treat the feature as incomplete and re-spawn.
 
 ---
 
 ## 8. Continuous learning
 
-After every mission, post-mortem → `learnings/patterns/<slug>.md`. The Orchestrator reads `learnings/` at the start of each new mission. This is how the harness improves.
+Three layers, all consulted at intake:
+
+1. **`learnings/patterns/`** — curated, cross-mission, human-readable catalogue. Updated at every `/mission-review`.
+2. **`learnings/anti-patterns/`** — failure modes to avoid.
+3. **`.claude/agent-memory/orchestrator/MEMORY.md`** — your own scratchpad, updated turn-by-turn. The harness exposes `memory: project` on the orchestrator subagent.
 
 ---
 
@@ -174,8 +183,8 @@ After every mission, post-mortem → `learnings/patterns/<slug>.md`. The Orchest
 - **Never run two Workers in parallel.**
 - **Never let a Validator see the Worker's reasoning.** It sees the contract and the diff.
 - **Never silently patch a failed feature.** Open a follow-up feature.
-- **Never end a mission with a red `status.json`.**
-- **Always update `log.md` and `status.json` after every state transition.**
+- **Never end a mission with a red `status.json`.** (The `Stop` hook will block you.)
+- **Never use `--no-verify` or bypass hooks.** If something blocks, fix the root cause.
 - **Always treat the user's approval at the gate as the only required human input** unless something genuinely blocks you (missing credentials, ambiguous direction the contract can't resolve).
 
 ---
@@ -184,7 +193,8 @@ After every mission, post-mortem → `learnings/patterns/<slug>.md`. The Orchest
 
 - Worker subagent times out or returns garbage → re-spawn with the same spec and a note about what went wrong. Twice in a row → escalate to the user.
 - Validator failure on the same feature twice → check the contract for a defect. Sometimes "done" was wrong, not the code.
-- You're confused about state → read `status.json` and `log.md`. Trust the files, not memory.
+- You're confused about state → run `/mission-status`. Trust the files, not memory.
+- The `Stop` hook is blocking session end → either close a red feature properly or transition its mission to `paused` / `abandoned` in `status.json`.
 
 ---
 
@@ -192,6 +202,9 @@ After every mission, post-mortem → `learnings/patterns/<slug>.md`. The Orchest
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — the full design
 - [ROADMAP.md](ROADMAP.md) — what's next
+- [AGENTS.md](AGENTS.md) — team roster + communication graph
 - [protocols/](protocols/) — per-phase specs
 - [templates/](templates/) — fill-in-the-blanks
-- [agents/](agents/) — subagent role prompts
+- [.claude/agents/](.claude/agents/) — actual subagent definitions
+- [.claude/skills/](.claude/skills/) — actual slash-skill definitions
+- [.claude/settings.json](.claude/settings.json) — permissions, hooks, session-level agent

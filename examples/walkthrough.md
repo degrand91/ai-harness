@@ -11,7 +11,7 @@ The scenario: the user asks for an OAuth login feature in a fictional Next.js ap
 **User:** "Add OAuth login (Google + GitHub) to the demo app at `~/projects/demo-app`. Existing email/password should keep working."
 
 **Orchestrator (this Claude session):**
-1. Scaffolds the mission folder inline using the Write tool, following [commands/mission-start.md](../commands/mission-start.md):
+1. Invokes `/mission-start "Add OAuth login (Google + GitHub) to the demo app"` (see [.claude/skills/mission-start/SKILL.md](../.claude/skills/mission-start/SKILL.md)). The skill drives the Orchestrator through scaffold + intake:
    - Picks the id `2026-05-23-add-oauth-login`.
    - Writes `missions/2026-05-23-add-oauth-login/{mission.md, plan.md, contract.md, status.json, log.md}` as stubs.
    - `status.json` starts at `state="intake"`.
@@ -55,11 +55,11 @@ Orchestrator records the approval in `mission.md` and `status.json`, transitions
 2. Spawns a Worker via the Agent tool:
    - `model: "sonnet"`
    - `description: "Worker — F001 add-next-auth-base"`
-   - prompt = contents of `agents/worker.md` + the spec + the contract slice. (No previous handoff — this is feature 1.)
+   - prompt = the spec + the contract slice. The Worker's role prompt is loaded from `.claude/agents/worker.md` automatically by `subagent_type: "worker"`. (No previous handoff — this is feature 1.)
 
 3. Worker returns a structured handoff. Orchestrator persists it at `features/001-add-next-auth-base/handoff.md`. Sections all present.
 
-4. Spawns a Scrutiny Validator (`agents/scrutiny-validator.md` + contract slice + diff). Verdict: **green**.
+4. Spawns a Scrutiny Validator (`subagent_type: "scrutiny-validator"`, role prompt from `.claude/agents/scrutiny-validator.md`; passed contract slice + diff). Verdict: **green**.
 
 5. F001 has no user-observable behavior. Orchestrator skips User-Testing.
 

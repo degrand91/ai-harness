@@ -12,7 +12,7 @@ A Worker is a short-lived Claude Code subagent that implements exactly one featu
 ## Inputs
 
 The Orchestrator passes a single self-contained prompt containing:
-- The role prompt from [agents/worker.md](../agents/worker.md).
+- The role prompt is loaded automatically from [.claude/agents/worker.md](../.claude/agents/worker.md) (registered subagent). The Orchestrator passes only the task.
 - The feature `spec.md`.
 - The slice of `contract.md` this feature must satisfy.
 - (Optional) The previous feature's `handoff.md` for context continuity.

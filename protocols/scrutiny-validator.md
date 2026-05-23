@@ -12,7 +12,7 @@ The Scrutiny Validator is an adversarial subagent that verifies a completed feat
 ## Inputs
 
 A single self-contained prompt containing:
-- The role prompt from [agents/scrutiny-validator.md](../agents/scrutiny-validator.md).
+- The role prompt is loaded automatically from [.claude/agents/scrutiny-validator.md](../.claude/agents/scrutiny-validator.md) (registered subagent). The Orchestrator passes only the task.
 - The full contract slice the feature must satisfy.
 - The git diff of the feature's commit(s).
 - The commands declared in the contract (e.g. `pnpm test`, `pytest`, `cargo test`, `npm run lint`).

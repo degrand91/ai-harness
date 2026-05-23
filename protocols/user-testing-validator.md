@@ -13,7 +13,7 @@ It is **never** a substitute for the Scrutiny Validator. Both run, in this order
 
 ## Inputs
 
-- The role prompt from [agents/user-testing-validator.md](../agents/user-testing-validator.md).
+- The role prompt is loaded automatically from [.claude/agents/user-testing-validator.md](../.claude/agents/user-testing-validator.md) (registered subagent). The Orchestrator passes only the task.
 - The user-facing contract slice — flows, expected outcomes, error states.
 - A launch recipe (which `dev` or `start` command to run; URL or executable path).
 - A test-data setup recipe (seeds, fixtures, credentials for test accounts).

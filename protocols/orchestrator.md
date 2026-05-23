@@ -54,12 +54,12 @@ In order:
 For each feature in order:
 1. Update `status.json`: `current_feature = NNN`.
 2. Append to `log.md`: `[ts] feature NNN started`.
-3. Spawn a Worker subagent with [agents/worker.md](../agents/worker.md) as the prompt prefix, plus:
+3. Spawn a Worker subagent via the Agent tool with `subagent_type: "worker"`. The system prompt is loaded automatically from [.claude/agents/worker.md](../.claude/agents/worker.md). Pass only the feature-specific task:
    - The feature `spec.md`.
    - The contract slice it must satisfy.
    - The previous feature's handoff (if any).
 4. Receive the Worker's return value. Persist it at `features/NNN/handoff.md`. Validate it has all required sections (see [handoff.md](handoff.md)). If not, re-spawn.
-5. Spawn a Scrutiny Validator subagent with [agents/scrutiny-validator.md](../agents/scrutiny-validator.md). It only sees the contract slice + the diff.
+5. Spawn a Scrutiny Validator subagent via the Agent tool with `subagent_type: "scrutiny-validator"` ([.claude/agents/scrutiny-validator.md](../.claude/agents/scrutiny-validator.md)). It only sees the contract slice + the diff.
 6. If the feature has user-observable behavior, spawn a User-Testing Validator.
 7. Decide:
    - All verdicts green → mark feature done, update `status.json`, advance.

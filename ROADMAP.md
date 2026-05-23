@@ -2,119 +2,100 @@
 
 The harness is intentionally small at v0.1 and grows by iteration. Every mission should leave it slightly better.
 
-Each phase below lists a concrete deliverable and an exit criterion. Don't ship a phase early.
+Each phase below lists a concrete deliverable and an exit criterion.
 
 ---
 
-## v0.1 — Foundations (this commit)
+## v0.1 — Foundations ✅ shipped
 
 **Deliverables**
 - Protocols (lifecycle, roles, contract, handoff, serial execution, model routing)
-- Templates (mission spec, contract, handoff, post-mortem, feature spec)
-- Subagent prompt files in `agents/`
-- `commands/mission-start.md` instructs Claude to scaffold mission folders inline (no shell scripts — templates are the source of truth)
-- `scripts/status.sh` — the only shell script, so users can check state without spending tokens
+- Templates (mission spec, contract, handoff, post-mortem, feature spec, status schema)
+- Role prompts in `agents/` (later migrated to `.claude/agents/` in v0.2)
+- `commands/*.md` slash-skill stubs (later migrated to `.claude/skills/` in v0.2)
 - CLAUDE.md operating manual
-- One worked example mission
-
-**Exit criterion.** Claude can be told "Run mission X" inside the harness folder and follow the protocol end-to-end without external tooling.
+- One worked example mission + a smoke-test mission that exercised the full lifecycle
 
 ---
 
-## v0.2 — Automation of the boring parts
+## v0.2 — Native Claude Code integration ✅ shipped
 
-**Goal**: remove repetitive Claude bookkeeping — but only with helpers whose work can't be done inside a Claude session.
+**What changed**: collapsed the originally-planned v0.2 / v0.3 / partial v0.4 phases into a single migration onto real Claude Code surfaces.
 
-The rule of thumb: **a shell script earns its place only if it has a real Claude-free use case** (cron, hook, status check, CI). Bookkeeping that always happens inside a session stays in the session.
+**Deliverables**
+- **`.claude/agents/`** — orchestrator, worker, scrutiny-validator, user-testing-validator, explorer, all with proper YAML frontmatter (tools allowlist/denylist, model, permissionMode, memory, color). Spawn via `subagent_type: "<name>"` — no inline prompts.
+- **`.claude/skills/`** — `/mission-start`, `/mission-status`, `/mission-resume`, `/mission-review`, `/mission-list`, `/scaffold-feature`, `/contract-check`, `/log`. Dynamic `!`bash`` context injection where useful. `disable-model-invocation` on the dangerous ones.
+- **`.claude/settings.json`** — sets `agent: orchestrator` (session-level), `includeCoAuthoredBy: false`, permission allow/deny rules, hooks wiring.
+- **`.claude/hooks/`** — `PostToolUse` auto-appends mission `log.md`; `Stop` refuses to end with red status; `SessionStart` injects active-mission context; `SubagentStop` records timings.
+- Orchestrator gets `memory: project` — `.claude/agent-memory/orchestrator/MEMORY.md` accumulates cross-mission insights.
 
-- `scripts/contract-check.sh` — runs all executable assertions in `contract.md` and writes a machine-readable verdict file. Useful from CI and from Stop hooks. Already has a Claude-free use case.
-- `scripts/log-tail.sh` — like `status.sh` but follows `log.md` live for long missions. Pure ops tool.
-- JSON schemas for `status.json` and feature `status.json` under `schemas/`, so any tool (not just Claude) can validate state.
-- **Explicitly not added**: `mission-init.sh`, `feature-init.sh`, `handoff-record.sh`. These run only inside a session — Claude does them with Write.
-
-**Exit criterion.** `contract.md` can be evaluated end-to-end without a Claude session (e.g. from CI).
-
----
-
-## v0.3 — Hook-enforced procedure
-
-**Goal**: the harness enforces its own rules instead of relying on Claude remembering them.
-
-- `hooks/pre-write-block-direct-impl.sh` — PreToolUse hook that blocks the Orchestrator from writing code outside `missions/` (workers operate from subagent context, not the main session).
-- `hooks/post-edit-update-log.sh` — PostToolUse hook that appends to `log.md` whenever a feature folder changes.
-- `hooks/stop-no-red-status.sh` — Stop hook that refuses to end if any feature's `status.json` is red.
-- `hooks/pre-subagent-inject-contract.sh` — PreToolUse hook on Agent calls that auto-injects the relevant contract slice.
-
-**Exit criterion.** A new Claude session cannot accidentally break protocol — the hooks stop it.
+**Exit criterion (met).** A fresh `claude` session in this folder picks up Orchestrator role + skills + hooks automatically. Subagents spawn by name, not by inlined prompts.
 
 ---
 
-## v0.4 — Learning loop
+## v0.3 — Multi-provider validation
 
-**Goal**: make the harness better with each completed mission.
+**Goal**: realise the strongest version of Creator-Verifier — the Worker and the Validator on **different providers** so the Validator doesn't inherit Worker training-data biases.
 
-- `learnings/patterns/<slug>.md` — distilled lessons from post-mortems.
-- `scripts/learnings-index.sh` — regenerates `learnings/INDEX.md`.
-- Orchestrator prompt automatically receives the top-N relevant patterns based on the mission spec.
-- `learnings/anti-patterns/` — things that failed; the orchestrator avoids them.
-- Quarterly self-review: orchestrator reads its own past plans, identifies recurring mistakes, proposes protocol edits.
+- MCP server config in `.claude/agents/scrutiny-validator.md` for an external provider's CLI (e.g. via `mcpServers:` inline definition).
+- `protocols/model-routing.md` extended with provider-aware decision tree.
+- Per-role cost report in `post-mortem.md` showing Worker vs Validator provider split.
+
+**Exit criterion.** Default Scrutiny Validator runs on a non-Claude provider when configured. Falls back to Haiku transparently when no external provider is available.
+
+---
+
+## v0.4 — Learning loop, deepened
+
+**Goal**: the harness gets measurably better with each completed mission.
+
+- Per-subagent project memory enabled on Worker and Scrutiny Validator (currently off — they're fresh-per-spawn by design; this is for a separate "scout" subagent that *does* accumulate).
+- `scripts/learnings-index.sh` regenerates `learnings/INDEX.md` automatically.
+- Quarterly self-review: orchestrator reads its own past plans (via its `agent-memory/MEMORY.md`), identifies recurring mistakes, proposes protocol edits.
+- A/B compare: pick two similar past missions, diff their post-mortems, surface the delta.
 
 **Exit criterion.** A mission similar to a past one shows measurably better outcomes (fewer follow-up features, fewer validator failures).
 
 ---
 
-## v0.5 — Multi-provider model routing
+## v0.5 — Parallel exploration, formalized
 
-**Goal**: realise the "different model in each role" principle, including across providers.
+**Goal**: realise the "parallelism only for read-only work" principle with a real fanout pattern.
 
-- `protocols/model-routing.md` extended with provider-aware decision tree.
-- Validator role can be routed to a non-Claude provider when configured (via an MCP server or external CLI), specifically to avoid training-data bias on Claude-written code.
-- Per-role token budgets recorded in `status.json`.
-- Cost report in `post-mortem.md`.
+- `/explore <questions...>` skill that spawns N explorer subagents from a list and synthesises results.
+- `protocols/parallel-exploration.md` — when the orchestrator may fan out and how many at once.
+- Anti-pattern guard: an `Agent(explorer)` is the only `subagent_type` allowed to be spawned concurrently. (Enforced via a PreToolUse hook on the Agent tool.)
 
-**Exit criterion.** A mission's `post-mortem.md` reports per-role model, tokens, and cost. Validator runs on a different provider than the worker.
-
----
-
-## v0.6 — Parallel exploration
-
-**Goal**: realise the "parallelism only for read-only work" principle.
-
-- `agents/explorer.md` — read-only subagent for codebase mapping, dep search, doc reads.
-- `protocols/parallel-exploration.md` — when the orchestrator may spawn N explorers at once.
-- `scripts/explorer-fanout.sh` — orchestrator helper that fans out exploration calls.
-- Anti-pattern guard: explorers cannot edit files (enforced by subagent type and tool allowlist).
-
-**Exit criterion.** Plan phase of a complex mission uses ≥3 parallel explorers and produces a measurably better plan.
+**Exit criterion.** Plan phase of a complex mission uses ≥3 parallel explorers and produces a measurably better plan than the same mission planned serially.
 
 ---
 
-## v0.7 — Mission Control surface
+## v0.6 — Mission Control surface
 
 **Goal**: human-friendly progress without reading raw markdown.
 
-- `scripts/mission-tui.sh` — a TUI (could be just `watch + jq + glow`) that shows active feature, last handoff, pending validation.
-- HTML mission report generated at close.
+- `scripts/mission-tui.sh` — a TUI that shows active feature, last handoff, pending validation. Could be `watch + jq + glow`.
+- HTML mission report generated at close, opened in browser (pattern from Claude Code's bundled visualizer skill).
 - Mission diff view: side-by-side of `plan.md` (intent) vs `log.md` (actual).
 
 **Exit criterion.** A non-engineer can glance at the TUI and answer "where is the mission?"
 
 ---
 
-## v0.8 — Resumability & multi-session
+## v0.7 — Resumability & multi-session
 
 **Goal**: a mission survives session crashes, restarts, and hand-offs between humans.
 
-- `commands/mission-resume.md` — formal resume protocol.
-- Session ID stamped in every state mutation.
+- Session ID stamped in every state mutation (already available via `${CLAUDE_SESSION_ID}` in skills).
 - Checkpoint system: every N features the orchestrator emits a `checkpoint.json` summarising remaining work.
 - "Pause and resume tomorrow" tested end-to-end.
+- `mission-resume` integration with Claude Code's built-in session resume.
 
 **Exit criterion.** A mission paused on day 3, restarted on day 5 in a fresh Claude session, completes correctly.
 
 ---
 
-## v0.9 — Anti-template & quality gates
+## v0.8 — Anti-template & quality gates
 
 **Goal**: kill generic-looking output, enforce taste.
 
@@ -123,6 +104,18 @@ The rule of thumb: **a shell script earns its place only if it has a real Claude
 - Visual regression baseline stored under `missions/<id>/snapshots/`.
 
 **Exit criterion.** Validator can reject a feature for taste reasons, not just functional.
+
+---
+
+## v0.9 — Background missions
+
+**Goal**: missions run unattended; the user gets notified at the approval gate and at close.
+
+- `claude --agent orchestrator -p "..."` (headless / non-interactive mode) drives the mission.
+- Notification hook (`Notification` event) wired to Slack / email / OS notification.
+- `RemoteTrigger` for "wake me when the gate is reached" pattern.
+
+**Exit criterion.** A mission can run overnight unattended, paged the user at the gate, resumed in the morning.
 
 ---
 
@@ -135,17 +128,30 @@ The rule of thumb: **a shell script earns its place only if it has a real Claude
 - `CHANGELOG.md`.
 - Versioned protocol files (`protocols/v1/`).
 - The harness has run at least one ≥7-day mission successfully.
+- Plugin packaging — the harness ships as a Claude Code plugin (per Anthropic's plugin spec), installable in any project.
 
-**Exit criterion.** Someone unfamiliar with the harness can read `README.md`, run a mission, and ship.
+**Exit criterion.** Someone unfamiliar with the harness can install the plugin in their project, run a mission, and ship.
 
 ---
 
 ## Beyond v1.0 (sketch)
 
-- Distributed orchestration: orchestrator on Opus, workers on a fleet of Sonnet sessions, coordinated via the filesystem.
-- A `harness-doctor` command that audits a mission folder for protocol violations.
-- Cross-mission analytics: which patterns recur, which validators trip most, which models cost most.
-- A `harness eject` command that generates a final hand-off doc when the human takes over.
+- **Agent Teams integration** (when stable): use `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` so Workers can be resumed via `SendMessage` instead of fresh-spawn-per-feature.
+- **Distributed orchestration**: orchestrator on Opus, workers on a fleet of Sonnet sessions, coordinated via the filesystem.
+- **`harness-doctor` command**: audits a mission folder for protocol violations.
+- **Cross-mission analytics**: which patterns recur, which validators trip most, which models cost most.
+- **`harness eject` command**: generates a final hand-off doc when the human takes over.
+
+---
+
+## What we **didn't** add (and why)
+
+The rule of thumb: **a tool only earns a place if it has a real use case Claude can't cover inline.**
+
+- ❌ `scripts/mission-init.sh` — Claude scaffolds via Write. Templates are the source of truth.
+- ❌ `scripts/feature-init.sh` — `/scaffold-feature` skill does this inline.
+- ❌ `scripts/handoff-record.sh` — Orchestrator writes the file directly after receiving a subagent return.
+- ❌ Top-level `agents/` and `commands/` folders — superseded by `.claude/agents/` and `.claude/skills/`.
 
 ---
 

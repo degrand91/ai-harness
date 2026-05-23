@@ -6,35 +6,45 @@ A Factory.ai-Missions-inspired autonomous coding harness that runs on top of Cla
 
 ## What it is
 
-A protocol, a set of role prompts, and a state convention. When Claude Code is invoked inside this folder with a mission, it adopts a three-role workflow:
+A protocol, a registered team of subagents, a set of slash-skills, and a state convention. When you open a Claude Code session in this folder, the session **is** the Orchestrator (via `.claude/settings.json:agent`). Three roles:
 
-- **Orchestrator** — plans features and milestones, writes the **validation contract** (what "done" means) *before any code is written*.
-- **Workers** — fresh context per feature, implement and commit via git, hand off through structured reports.
-- **Validators** — adversarial by design, never saw the worker's code. Two flavors: **scrutiny** (lint/typecheck/test/code-review) and **user-testing** (run the app, behave like QA).
+- **Orchestrator** (this session) — plans features and milestones, writes the **validation contract** (what "done" means) *before any code is written*.
+- **Workers** — short-lived subagents, fresh context per feature, implement and commit via git, hand off through structured reports.
+- **Validators** — adversarial by design, never see the worker's reasoning. Two flavors: **scrutiny** (lint/typecheck/test/code-review) and **user-testing** (run the app, behave like QA).
 
-Workers run **serially**. Parallelism is reserved for read-only work (codebase exploration, doc reads, validation reviews).
+Workers run **serially**. Parallelism is reserved for read-only work (codebase exploration via `explorer` subagents, doc reads, validation reviews).
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full model and [protocols/](protocols/) for each role's spec.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full model, [AGENTS.md](AGENTS.md) for the team roster, and [protocols/](protocols/) for each role's spec.
 
 ## Quickstart
 
-```text
-# 1. Open a Claude Code session at this folder. Tell Claude:
-#       Start a mission: "Add OAuth login to the app"
-#
-#    Claude scaffolds missions/<id>/ inline (no shell scripts),
-#    scopes through conversation, drafts the plan + validation contract,
-#    and waits for your approval — the only mandatory human gate.
+```bash
+# 1. From the harness folder, launch Claude Code as the Orchestrator.
+#    The .claude/settings.json file sets `agent: orchestrator`, so this works:
+claude
 
-# 2. Approve when you're happy with the plan + contract.
-#    Claude then executes the feature loop autonomously.
+#    Equivalently, you can be explicit:
+claude --agent orchestrator
 
-# 3. Check progress any time (Claude-free, no tokens spent):
+# 2. In the session, start a mission with the bundled slash-skill:
+/mission-start Add OAuth login to the demo app
+
+#    Claude scopes through conversation, drafts the plan + validation contract,
+#    waits for your approval — the only mandatory human gate.
+
+# 3. Approve. The feature loop runs autonomously: worker → scrutiny → user-test → next.
+
+# 4. Check progress any time (Claude-free, no tokens spent):
 ./scripts/status.sh                          # most recent mission
 ./scripts/status.sh 2026-05-23-add-oauth     # specific mission
+
+# 5. Or, in-session:
+/mission-status
+/mission-list
+/mission-resume 2026-05-23-add-oauth
 ```
 
-The only shell script is `status.sh` — it lets you check mission state without spending tokens. Everything else (scaffolding, feature init, handoffs, validation) happens inline inside Claude's session, where it belongs.
+The only shell script is `status.sh` — it lets you check mission state without spending tokens. Everything else (scaffolding, feature init, handoffs, validation) happens inline inside Claude's session via skills and the Write tool.
 
 ## What's inside
 
@@ -42,16 +52,18 @@ The only shell script is `status.sh` — it lets you check mission state without
 |------|---------|
 | [CLAUDE.md](CLAUDE.md) | Operating manual every Claude session reads on entry |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The five strategies, the three roles, state model |
+| [AGENTS.md](AGENTS.md) | Team roster + agent communication graph |
 | [ROADMAP.md](ROADMAP.md) | Phased iteration plan, v0.1 → v1.0 |
-| `protocols/` | Specs for orchestrator, worker, validators, handoff, contract |
-| `agents/` | Role prompts injected into spawned subagents |
-| `templates/` | Mission spec, validation contract, handoff report, post-mortem |
-| `commands/` | Slash-command-style entry points (mission-start, mission-status, etc.) |
-| `scripts/` | Shell helpers (init, record-handoff, validate) |
+| **`.claude/agents/`** | Registered subagents: orchestrator, worker, scrutiny-validator, user-testing-validator, explorer |
+| **`.claude/skills/`** | Slash-skills: mission-start, mission-status, mission-resume, mission-review, mission-list, scaffold-feature, contract-check, log |
+| **`.claude/hooks/`** | Procedure-enforcing hooks (PostToolUse log append, Stop block on red, SessionStart status inject, SubagentStop record) |
+| **`.claude/settings.json`** | Session-level agent, permissions, hook wiring |
+| `protocols/` | Reference specs for orchestrator, worker, validators, handoff, contract, lifecycle |
+| `templates/` | Mission spec, validation contract, handoff report, post-mortem, status schema |
+| `scripts/status.sh` | Claude-free status inspection |
 | `missions/` | One folder per mission — all state lives here |
-| `learnings/` | Distilled patterns from past missions, fed back into the orchestrator |
-| `hooks/` | Optional Claude Code hooks that enforce procedure |
-| `examples/` | Worked example missions |
+| `learnings/` | Curated cross-mission patterns + anti-patterns + proposals |
+| `examples/` | Worked walkthrough and dry-run guide |
 
 ## Design principles
 
@@ -59,9 +71,10 @@ The only shell script is `status.sh` — it lets you check mission state without
 2. **Serial features, parallel exploration.** Correctness compounds over multi-day runs.
 3. **Fresh context per worker.** A worker inherits the codebase via git, not accumulated chat history.
 4. **Adversarial validation.** Validators read the contract, not the worker's reasoning.
-5. **Model-agnostic roles.** Each role can be routed to a different model (Opus for planning, Sonnet for code, Haiku for cheap exploration, a different provider for validation when feasible).
-6. **The harness improves itself.** Every mission ends with a post-mortem; patterns get distilled into `learnings/` and injected into future orchestrator prompts.
+5. **Model-agnostic roles.** Each role can be routed to a different model (Opus for planning, Sonnet for code, Haiku for cheap exploration/validation).
+6. **Use the platform.** Subagents, skills, hooks, and agent memory are all native Claude Code surfaces — the harness binds them together rather than reinventing them.
+7. **The harness improves itself.** Every mission ends with a post-mortem; patterns get distilled into `learnings/` and into the orchestrator's `.claude/agent-memory/`.
 
 ## Status
 
-**v0.1** — protocols, templates, slash commands, manual orchestration by Claude. Iteration plan in [ROADMAP.md](ROADMAP.md).
+**v0.2** — full Claude Code integration (subagents, skills, hooks, settings). One smoke-test mission completed end-to-end. Roadmap in [ROADMAP.md](ROADMAP.md).

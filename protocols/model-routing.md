@@ -22,7 +22,7 @@ Agent({
   subagent_type: "general-purpose",
   model: "sonnet",       // worker
   description: "Worker — feature 003-add-oauth-routes",
-  prompt: <agents/worker.md prefix> + <feature spec> + <contract slice>
+  prompt: <feature spec> + <contract slice>   // role prompt loaded from .claude/agents/worker.md automatically
 })
 ```
 
