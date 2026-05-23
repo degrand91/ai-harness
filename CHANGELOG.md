@@ -2,6 +2,24 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] — 2026-05-23
+
+### Changed
+
+- `README.md` and `ARCHITECTURE.md` — refreshed v0.1/v0.2 references to v1.0 shipped state (commit `deee35f`).
+- `AGENTS.md` roster — added `scout` and `scrutiny-validator-external` rows. `CLAUDE.md` section 1 — expanded agent count to 7, skill count to 9 (added `/explore`), hook events to 6 (added PreToolUse, Notification, second SubagentStop handler). Commit `a5503f8`.
+- `learnings/README.md` — removed stale "once v0.4 lands" conditional referencing `scripts/learnings-index.sh`. Commit `bc08934`.
+- `ROADMAP.md` — added a new `## Beyond v1.0 (forward planning)` section with two grounded candidate phases:
+  - **v1.1 (planned)** — Observability & self-audit: token aggregation in `status.json` + `/harness-doctor` audit command.
+  - **v1.2 (candidate)** — Validator quality upgrade: switch default Scrutiny model Haiku → Sonnet for subjective contracts.
+  - The existing "Beyond v1.0 (sketch)" section preserved untouched. All v0.x and v1.0 sections byte-identical (verified by integration check).
+  - Commit `5470932`.
+
+### Known gaps
+
+- v1.1 and v1.2 are PLANNED / CANDIDATE phases — not yet shipped. Promote to ✅ shipped when their exit criteria are met by a future mission.
+- The "Beyond v1.0 (sketch)" items (Agent Teams integration, Distributed orchestration, `harness eject`) remain speculative — no current evidence backing.
+
 ## [1.0.1] — 2026-05-23
 
 ### Fixed
