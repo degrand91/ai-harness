@@ -107,7 +107,9 @@ Shipped 2026-05-23 — session_id stamping in skills/hook, `scripts/mission-chec
 
 ---
 
-## v0.8 — Anti-template & quality gates
+## v0.8 — Anti-template & quality gates ✅ shipped
+
+Shipped 2026-05-23 — `protocols/design-quality.md`, anti-template gate in user-testing-validator, `protocols/snapshots-convention.md`. No UI exists in the harness itself, so the gates ship as documentation and protocol; they are exercised when the harness is used on UI work.
 
 **Goal**: kill generic-looking output, enforce taste.
 

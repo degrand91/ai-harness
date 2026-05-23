@@ -2,6 +2,16 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — 2026-05-23
+
+### Added
+- `protocols/design-quality.md` — harness-level extension of the ECC web design-quality rules; defines the anti-template gate, banned patterns, required qualities checklist, and worthwhile style directions that the user-testing validator consults when evaluating UI-bearing features.
+- Anti-template gate in `user-testing-validator` prompt — validator now explicitly checks "does this look like a default template?" and can reject a feature for taste/design-quality reasons, not just functional ones.
+- `protocols/snapshots-convention.md` — convention for storing visual regression baselines under `missions/<id>/snapshots/`; defines naming scheme, breakpoints (320, 768, 1024, 1440), and how the user-testing validator compares new snapshots against the baseline.
+
+### Known gaps
+- No UI exists in the harness itself, so the anti-template gate and snapshot convention ship as documentation and protocol only. Both are exercised when the harness drives work on a UI-bearing project. Full end-to-end visual regression (Playwright screenshots, baseline diff) is deferred to the first qualifying UI mission.
+
 ## [0.7.0] — 2026-05-23
 
 ### Added
