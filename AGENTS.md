@@ -11,6 +11,8 @@ The harness operates with a fixed team of agent roles. Each role is a real Claud
 | **Scrutiny Validator** | `scrutiny-validator` | One feature | Haiku | Read, Grep, Glob, Bash (no Write/Edit) | none (adversarial) |
 | **User-Testing Validator** | `user-testing-validator` | One feature | Sonnet | Bash, Read, Grep, Glob (no Write/Edit) | none |
 | **Explorer** | `explorer` | One question | Haiku | Read, Grep, Glob, WebFetch, WebSearch (no Bash, no Write/Edit) | none |
+| **Scout** | `scout` | Cross-mission (long-lived) | Haiku | Read, Grep, Glob, WebFetch, WebSearch | `project` — `.claude/agent-memory/scout/` |
+| **Scrutiny Validator (external)** | `scrutiny-validator-external` | One feature (env-gated) | Haiku (via MCP to external provider) | Read, Grep, Glob, Bash (no Write/Edit) | none |
 
 ## How to spawn one
 
@@ -70,6 +72,9 @@ Agent(
 
    broadcast channel (all roles read, only Orchestrator writes):
         log.md  +  status.json  +  contract.md
+
+   Note: Scout sits off to the side, consulted at intake by the Orchestrator
+   for cross-mission memory before planning begins. It is never fanned out.
 ```
 
 **Forbidden communication paths** (per the Missions design):

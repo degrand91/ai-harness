@@ -6,10 +6,10 @@ The harness is a Factory-Missions-style autonomous coding system. The user defin
 
 The harness uses native Claude Code surfaces wherever possible:
 
-- **`.claude/agents/*.md`** — registered subagents (`worker`, `scrutiny-validator`, `user-testing-validator`, `explorer`, `orchestrator`). Spawn via the Agent tool with `subagent_type: "worker"` — no inline prompt needed.
-- **`.claude/skills/<name>/SKILL.md`** — invokable as `/mission-start`, `/mission-status`, `/mission-resume`, `/mission-review`, `/mission-list`, `/scaffold-feature`, `/contract-check`, `/log`.
+- **`.claude/agents/*.md`** — registered subagents (`worker`, `scrutiny-validator`, `scrutiny-validator-external`, `user-testing-validator`, `explorer`, `scout`, `orchestrator`). Spawn via the Agent tool with `subagent_type: "worker"` — no inline prompt needed.
+- **`.claude/skills/<name>/SKILL.md`** — invokable as `/mission-start`, `/mission-status`, `/mission-resume`, `/mission-review`, `/mission-list`, `/scaffold-feature`, `/contract-check`, `/log`, `/explore`.
 - **`.claude/settings.json`** — sets `agent: orchestrator` so a fresh session **is** the Orchestrator. Also defines permissions and hooks.
-- **`.claude/hooks/*.sh`** — `PostToolUse` auto-appends mission `log.md`; `Stop` blocks ending with red status; `SessionStart` injects active-mission context; `SubagentStop` records timings.
+- **`.claude/hooks/*.sh`** — `PostToolUse` auto-appends mission `log.md`; `Stop` blocks ending with red status; `SessionStart` injects active-mission context; `SubagentStop` records timings (two handlers: record timing + release lock); `PreToolUse` (matcher: Agent) enforces serial spawn; `Notification` fires at approval gate.
 
 ---
 
@@ -96,6 +96,8 @@ You spawn these via the Agent tool. Their system prompts live in `.claude/agents
 | `scrutiny-validator` | After every feature handoff | haiku | read-only + Bash (no Write/Edit) |
 | `user-testing-validator` | After scrutiny, if user-observable | sonnet | Bash + Read (no Write/Edit) |
 | `explorer` | Parallel read-only recon during planning | haiku | Read/Grep/Glob/WebFetch (no Bash, no Write/Edit) |
+| `scout` | Cross-mission memory consulted at intake | haiku | Read/Grep/Glob/WebFetch/WebSearch (no Bash, no Write/Edit) |
+| `scrutiny-validator-external` | Adversarial review via external provider (env-gated) | haiku (MCP) | Read/Grep/Glob/Bash (no Write/Edit) |
 
 Workers and Validators have **fresh context** every spawn. They do not see your chat history.
 
