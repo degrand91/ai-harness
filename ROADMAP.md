@@ -47,7 +47,9 @@ Shipped 2026-05-23 — `protocols/multi-provider-validation.md`, `.claude/agents
 
 ---
 
-## v0.4 — Learning loop, deepened
+## v0.4 — Learning loop, deepened ✅ shipped
+
+Shipped 2026-05-23 — Scout subagent (`scout.md`), `scripts/learnings-index.sh`, `protocols/self-review.md`, `protocols/ab-compare.md`.
 
 **Goal**: the harness gets measurably better with each completed mission.
 
