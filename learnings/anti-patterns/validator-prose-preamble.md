@@ -24,3 +24,8 @@ The model is trained to be helpful and conversational. Returning bare structured
 ## Origin
 
 `missions/2026-05-22-add-marker/post-mortem.md` — smoke-test mission. Scrutiny Validator on Haiku emitted a single-paragraph preamble; verdict content itself was correct.
+
+## Recurrence log
+
+- **2026-05-23 (mission `2026-05-23-add-marker2`)** — Same model (Haiku Scrutiny). Preamble: `"I'll create the verdict directly based on the contract requirements and format expectations."` Verdict body was correct; defensive orchestrator parsing absorbed the drift. Proves the role-prompt fix has not been applied yet. See `learnings/proposals/tighten-validator-role-prompt.md`.
+- **2026-05-23 (mission `2026-05-23-ship-v0-3-multi-provider`)** — Recurred on 5 of 7 Scrutiny passes (F001, F002, F004, F006-minimal; F003 + F005 + F007-self compliant). 8 confirmed instances across 3 missions, ~9 Haiku scrutiny passes. F005's orchestrator-side defensive verdict-parsing rule was shipped this mission and resolves the operational impact. The underlying anti-pattern (model fails to comply with strict format rule) is **stubborn but absorbed**. Candidate follow-up: switch default Scrutiny model to Sonnet on missions with subjective assertions.
