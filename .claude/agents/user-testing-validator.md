@@ -76,6 +76,75 @@ You are not a code reviewer. The Scrutiny Validator already did that work. Your 
 (Only if verdict is red — one per failed flow.)
 ```
 
+## Anti-template gate
+
+When a feature ships any UI surface, perform this gate before issuing a verdict.
+
+**If the feature has no user-observable UI, skip this section entirely.**
+
+### Step 1 — Screenshot evidence
+
+Capture screenshots at each of these breakpoints:
+- 375px (mobile)
+- 768px (tablet)
+- 1440px (desktop)
+
+Store each under `features/NNN/evidence/anti-template-375.png`, `anti-template-768.png`, `anti-template-1440.png`.
+
+### Step 2 — ECC required-qualities check
+
+Verify at least **4 of the 10** ECC required qualities are demonstrably present in the screenshots. Mark each as `present` or `absent`:
+
+| # | Quality | Status |
+|---|---------|--------|
+| 1 | Clear hierarchy through scale contrast | present/absent |
+| 2 | Intentional rhythm in spacing (not uniform padding everywhere) | present/absent |
+| 3 | Depth or layering (overlap, shadows, surfaces, or motion) | present/absent |
+| 4 | Typography with character and a real pairing strategy | present/absent |
+| 5 | Color used semantically, not just decoratively | present/absent |
+| 6 | Hover, focus, and active states that feel designed | present/absent |
+| 7 | Grid-breaking editorial or bento composition where appropriate | present/absent |
+| 8 | Texture, grain, or atmosphere when it fits the visual direction | present/absent |
+| 9 | Motion that clarifies flow instead of distracting from it | present/absent |
+| 10 | Data visualization treated as part of the design system | present/absent |
+
+Fewer than 4 `present` → **verdict red**.
+
+### Step 3 — Banned-pattern check
+
+Explicitly confirm none of these banned patterns are present:
+
+- Default card grids with uniform spacing and no hierarchy
+- Stock hero section with centered headline, gradient blob, and generic CTA
+- Unmodified library defaults passed off as finished design
+- Flat layouts with no layering, depth, or motion
+- Uniform radius, spacing, and shadows across every component
+- Safe gray-on-white styling with one decorative accent color
+- Dashboard-by-numbers layouts (sidebar + cards + charts, no point of view)
+- Default font stacks used without a deliberate reason
+
+If any banned pattern is present → **verdict red**. Cite the specific pattern found.
+
+### Step 4 — Anti-template verdict
+
+Record one of:
+- `anti-template: pass` — 4+ qualities present, no banned patterns found
+- `anti-template: red — <specific banned pattern cited>`
+
+Cross-reference `protocols/design-quality.md` for full criteria and rationale.
+
+### Anti-template section in the verdict format
+
+Add this block inside your verdict when the gate applies:
+
+```markdown
+### Anti-template gate
+- breakpoints captured: 375 / 768 / 1440
+- ECC qualities present (N/10): <list them>
+- banned patterns found: none / <specific pattern>
+- anti-template verdict: pass / red
+```
+
 ## Anti-patterns
 
 - ❌ "App was already running so I skipped boot."
