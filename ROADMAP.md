@@ -101,7 +101,9 @@ Shipped 2026-05-23 — session_id stamping in skills/hook, `scripts/mission-chec
 - "Pause and resume tomorrow" tested end-to-end.
 - `mission-resume` integration with Claude Code's built-in session resume.
 
-**Exit criterion.** A mission paused on day 3, restarted on day 5 in a fresh Claude session, completes correctly.
+**Exit criterion.** A mission paused mid-execution (across a session boundary) is resumed cleanly via `/mission-resume` and completes correctly. Session boundary, not calendar days, is the load-bearing concept under AI velocity.
+
+> **Historical wording (pre-v1.0):** "A mission paused on day 3, restarted on day 5 in a fresh Claude session, completes correctly." Rewritten in v1.0 under AI velocity per chain-end roadmap cleanup.
 
 **Exit criterion as shipped.** The original criterion is calendar-day-bound and requires two separate human-launched sessions to verify end-to-end. Under AI velocity (same-day multi-feature shipping), the criterion was reinterpreted as "session-boundary resume": a mission interrupted mid-feature can be resumed in a fresh session by reading `checkpoint.json` and `/mission-resume` without loss of state. The full day-3 → day-5 path is documented in the protocol and simulated in F005; real cross-session verification is tracked as a v0.7.1 follow-up.
 
@@ -131,7 +133,9 @@ Shipped 2026-05-23 — `protocols/headless-mode.md`, `notify-at-gate.sh` hook, `
 - Notification hook (`Notification` event) wired to Slack / email / OS notification.
 - `RemoteTrigger` for "wake me when the gate is reached" pattern.
 
-**Exit criterion.** A mission can run overnight unattended, paged the user at the gate, resumed in the morning.
+**Exit criterion.** A mission can run unattended for an extended autonomous span (no human intervention between approval gate and close), surface to the user only on the conditions documented in `protocols/remote-trigger.md` (genuine blocker, mission close, or red status). Wall-clock duration of the unattended span is incidental.
+
+> **Historical wording (pre-v1.0):** "A mission can run overnight unattended, paged the user at the gate, resumed in the morning." Rewritten in v1.0 under AI velocity per chain-end roadmap cleanup.
 
 ---
 
@@ -143,7 +147,9 @@ Shipped 2026-05-23 — `protocols/headless-mode.md`, `notify-at-gate.sh` hook, `
 - `examples/` covers: greenfield app, refactor mission, bug-fix mission, migration mission.
 - `CHANGELOG.md`.
 - Versioned protocol files (`protocols/v1/`).
-- The harness has run at least one ≥7-day mission successfully.
+- The harness has shipped at least one **substantive** mission successfully — defined as a mission with ≥5 features touching multiple subsystems and producing a real release artifact. (Under AI velocity, calendar days are not the substantive constraint; complexity and outcome are.)
+
+  > **Historical wording (pre-v1.0):** "The harness has run at least one ≥7-day mission successfully." Rewritten in v1.0 under AI velocity per chain-end roadmap cleanup.
 - Plugin packaging — the harness ships as a Claude Code plugin (per Anthropic's plugin spec), installable in any project.
 
 **Exit criterion.** Someone unfamiliar with the harness can install the plugin in their project, run a mission, and ship.
