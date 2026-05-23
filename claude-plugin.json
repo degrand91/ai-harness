@@ -1,0 +1,50 @@
+{
+  "_comment": "Best-effort manifest — Anthropic's official plugin spec was not publicly documented at v1.0 ship time. Fields and structure may need adjustment when the official spec lands.",
+  "name": "harness",
+  "version": "1.0.0",
+  "description": "Factory-Missions-style autonomous coding harness for Claude Code. Provides Orchestrator, Worker, and Validator subagents, slash-skills, and lifecycle hooks for multi-feature missions.",
+  "author": "Stefano De Grandis ",
+  "repository": "git+https://github.com/stefanodegrandis/harness.git",
+  "_repository_note": "Placeholder URL — update with the actual public repository address when the repo is published.",
+  "minimum_claude_code_version": "0.2.0",
+  "capabilities": {
+    "agents": [
+      "orchestrator",
+      "worker",
+      "scrutiny-validator",
+      "scrutiny-validator-external",
+      "user-testing-validator",
+      "explorer",
+      "scout"
+    ],
+    "skills": [
+      "mission-start",
+      "mission-status",
+      "mission-resume",
+      "mission-review",
+      "mission-list",
+      "scaffold-feature",
+      "contract-check",
+      "log",
+      "explore"
+    ],
+    "hooks": [
+      "PostToolUse",
+      "Stop",
+      "SessionStart",
+      "SubagentStop",
+      "PreToolUse",
+      "Notification"
+    ]
+  },
+  "installation": {
+    "method": "manual",
+    "steps": [
+      "Clone or download this repository.",
+      "Copy the .claude/ directory from this repo into the root of your target project.",
+      "Open a Claude Code session in your target project — the orchestrator agent activates automatically via .claude/settings.json.",
+      "Run /mission-start <your goal> to begin."
+    ],
+    "notes": "When Anthropic ships official 'claude plugin install' support, this manifest is intended to be compatible with that flow. Until then, the manual copy-of-.claude/ method is the canonical install path."
+  }
+}

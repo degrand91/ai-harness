@@ -217,3 +217,35 @@ Three layers, all consulted at intake:
 - [.claude/agents/](.claude/agents/) — actual subagent definitions
 - [.claude/skills/](.claude/skills/) — actual slash-skill definitions
 - [.claude/settings.json](.claude/settings.json) — permissions, hooks, session-level agent
+
+---
+
+## 12. Installing as a Claude Code plugin
+
+> **Note:** This manifest (`claude-plugin.json`) is a best-effort format — Anthropic's official plugin spec was not publicly documented at v1.0 ship time. Expect to adjust fields when the official spec lands.
+
+### Manual installation (current method)
+
+```bash
+# Clone the harness repository
+git clone https://github.com/stefanodegrandis/harness.git harness
+
+# Copy the .claude/ directory into your target project
+cp -r harness/.claude /path/to/your/project/.claude
+
+# Open Claude Code in your target project — the orchestrator activates automatically
+cd /path/to/your/project
+claude
+```
+
+The `.claude/settings.json` file sets `agent: orchestrator`, so the session opens as the Orchestrator without any extra flags.
+
+### Via `claude plugin install` (when supported)
+
+When Anthropic ships official plugin installation support, the `claude-plugin.json` manifest at the repo root is intended to be compatible:
+
+```bash
+claude plugin install git+https://github.com/stefanodegrandis/harness.git
+```
+
+Until then, the manual copy method above is the canonical install path.
