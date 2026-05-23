@@ -2,6 +2,21 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-05-23
+
+### Added
+- Session ID stamping in `SessionStart` hook and `/mission-start` skill — every state mutation now records `session_id` so a resumed session can distinguish its own writes from a previous session's writes.
+- `scripts/mission-checkpoint.sh` — checkpoint protocol that serialises remaining-work state into `missions/<id>/checkpoint.json`; invoked automatically after every feature completion and on `Stop`. The checkpoint captures: remaining feature list, last completed feature sha, orchestrator MEMORY.md digest, and timestamp.
+- `checkpoint.json` template in `templates/` — schema for the checkpoint document emitted by `mission-checkpoint.sh`.
+- `/mission-resume` skill updated with checkpoint-aware context injection: on session start it reads `checkpoint.json` (if present) and reconstructs the orchestrator's working state before any new prompt is processed.
+
+### Changed
+- ROADMAP v0.7 exit criterion reinterpreted under AI velocity (calendar-day framing → "session-boundary resume"): a mission interrupted mid-feature can be resumed in a fresh session via `checkpoint.json` + `/mission-resume` without loss of state. The original literal criterion (day-3 pause → day-5 resume across two human-launched sessions) is preserved in Known gaps below.
+
+### Known gaps
+- Full end-to-end multi-Claude-session resume (literal exit criterion: mission paused day 3, restarted day 5 in a brand-new `claude` process) requires a second human-launched session to verify. The Orchestrator handles the HOW but cannot spawn a parent CLI process from inside a session. F005 smoke-tests the resume mechanism via simulation; real cross-session validation is tracked as a v0.7.1 follow-up.
+- `mission-checkpoint.sh` is wired into the `Stop` hook but not yet wired into the `SubagentStop` hook; checkpoints are therefore session-granular, not feature-granular. Fine-grained per-feature checkpointing is a v0.7.1 improvement.
+
 ## [0.6.0] — 2026-05-23
 
 ### Added

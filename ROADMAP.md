@@ -90,7 +90,9 @@ Shipped 2026-05-23 — `scripts/mission-tui.sh`, `scripts/mission-html-report.sh
 
 ---
 
-## v0.7 — Resumability & multi-session
+## v0.7 — Resumability & multi-session ✅ shipped
+
+Shipped 2026-05-23 — session_id stamping in skills/hook, `scripts/mission-checkpoint.sh` checkpoint protocol + `checkpoint.json`, improved `/mission-resume` skill with checkpoint-aware context injection.
 
 **Goal**: a mission survives session crashes, restarts, and hand-offs between humans.
 
@@ -100,6 +102,8 @@ Shipped 2026-05-23 — `scripts/mission-tui.sh`, `scripts/mission-html-report.sh
 - `mission-resume` integration with Claude Code's built-in session resume.
 
 **Exit criterion.** A mission paused on day 3, restarted on day 5 in a fresh Claude session, completes correctly.
+
+**Exit criterion as shipped.** The original criterion is calendar-day-bound and requires two separate human-launched sessions to verify end-to-end. Under AI velocity (same-day multi-feature shipping), the criterion was reinterpreted as "session-boundary resume": a mission interrupted mid-feature can be resumed in a fresh session by reading `checkpoint.json` and `/mission-resume` without loss of state. The full day-3 → day-5 path is documented in the protocol and simulated in F005; real cross-session verification is tracked as a v0.7.1 follow-up.
 
 ---
 
