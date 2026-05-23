@@ -139,7 +139,9 @@ Shipped 2026-05-23 — `protocols/headless-mode.md`, `notify-at-gate.sh` hook, `
 
 ---
 
-## v1.0 — Production
+## v1.0 — Production ✅ shipped
+
+Shipped 2026-05-23 — `docs/` (faq, glossary, troubleshooting, hook-reference), `examples/` (greenfield-app, refactor, bug-fix, migration), `protocols/v1/` snapshot, `claude-plugin.json`, CHANGELOG with full chain summary. Eight missions, ~45 features, ~30 commits, delivered in one chained-mission marathon on 2026-05-23 under AI velocity.
 
 **Goal**: stable, documented, used.
 

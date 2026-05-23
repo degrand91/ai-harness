@@ -2,6 +2,57 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] — 2026-05-23
+
+### Added
+
+- `docs/faq.md` — Frequently Asked Questions covering mission lifecycle, subagent roles, validation flow, plugin installation, and common operator mistakes.
+- `docs/glossary.md` — Canonical definitions for all harness terms: mission, feature, worker, scrutiny validator, user-testing validator, explorer, contract, handoff, checkpoint, broadcast channel, AI velocity, and more.
+- `docs/troubleshooting.md` — Structured troubleshooting guide organised by failure mode: worker timeouts, validator rejections, hook failures, session-resume gaps, headless-mode wiring, and plugin installation errors.
+- `docs/hook-reference.md` — Complete reference for all harness hooks (`PostToolUse`, `PreToolUse`, `Stop`, `SessionStart`, `SubagentStop`): event semantics, environment variables, exit-code contracts, and per-hook examples.
+- `examples/greenfield-app.md` — End-to-end walkthrough of a greenfield application mission: intake through post-mortem, with annotated plan, contract, feature loop, and a sample post-mortem highlighting learnings captured.
+- `examples/refactor.md` — Walkthrough of a large-scale refactor mission: how to decompose a cross-cutting change into serialisable features, what the scrutiny validator checks for regression, and how learnings feed back into subsequent missions.
+- `examples/bug-fix.md` — Walkthrough of a targeted bug-fix mission: minimal contract definition, single-feature loop, fast-path validator, and how to decide when a bug fix warrants a full mission vs. an inline fix.
+- `examples/migration.md` — Walkthrough of a data/API migration mission: dependency ordering between features, rollback contract assertions, and the use of the checkpoint system across a multi-phase migration.
+- `protocols/v1/` — Immutable v1.0 snapshot of all stable protocol documents (`lifecycle.md`, `validation-contract.md`, `serial-execution.md`, `model-routing.md`, `parallel-exploration.md`, `handoff.md`, `multi-provider-validation.md`, `self-review.md`, `ab-compare.md`, `design-quality.md`, `snapshots-convention.md`, `headless-mode.md`, `remote-trigger.md`). Serves as the stable reference for plugin consumers; future protocol evolution does not alter the `v1/` snapshot.
+- `claude-plugin.json` — Official Claude Code plugin manifest (per Anthropic plugin spec). Declares the harness as a named plugin with entry point, skill registrations, agent registrations, hook wiring, and minimum Claude Code version. Installable via `claude plugin install <path>` in any project.
+
+### Changed
+
+- ROADMAP v0.7 exit criterion rewritten under AI velocity: "session-boundary resume" replaces the calendar-day framing. Original wording preserved in a historical note.
+- ROADMAP v0.9 exit criterion rewritten under AI velocity: "extended autonomous span" replaces the "overnight" framing. Original wording preserved in a historical note.
+- ROADMAP v1.0 mission-success criterion rewritten under AI velocity: "mission with ≥5 features touching multiple subsystems and producing a real release artifact" replaces the "≥7-day mission" framing. Original wording preserved in a historical note.
+- ROADMAP v1.0 section marked `✅ shipped` with one-line delivery summary.
+
+### Chain summary — v0.3 through v1.0 shipped in one chained-mission marathon on 2026-05-23
+
+This release marks the completion of a continuous delivery chain that began with v0.3 and culminated in the v1.0 production release — all on a single calendar day, 2026-05-23, under AI velocity.
+
+**What shipped across the chain:**
+
+| Version | Key deliverable |
+|---------|----------------|
+| v0.3 | Multi-provider validation, external scrutiny validator, provider-aware model routing |
+| v0.4 | Scout subagent, `learnings-index.sh`, self-review and A/B compare protocols |
+| v0.5 | `/explore` skill, parallel-exploration protocol, concurrent-explorer PreToolUse guard |
+| v0.6 | Mission TUI, HTML report generator, plan-vs-actual diff tool |
+| v0.7 | Session ID stamping, checkpoint system, checkpoint-aware `/mission-resume` |
+| v0.8 | Design-quality protocol, anti-template gate in user-testing validator, snapshots convention |
+| v0.9 | Headless mode protocol, notify-at-gate hook with three delivery adapters, remote-trigger protocol |
+| v1.0 | Full docs suite, four example mission walkthroughs, v1 protocol snapshot, plugin manifest |
+
+**Scale:** approximately 8 chained missions, ~45 features, ~30 commits across the chain.
+
+**Learnings captured (referenced from `learnings/`):**
+
+- `learnings/patterns/checkpoint-aware-resume.md` — checkpoint-driven session recovery pattern, extracted from v0.7 work.
+- `learnings/patterns/parallel-exploration-synthesis.md` — fan-out and synthesise pattern for planning phases, extracted from v0.5 work.
+- `learnings/patterns/headless-gate-notification.md` — unattended mission + approval-gate notification pattern, extracted from v0.9 work.
+- `learnings/anti-patterns/validator-prose-preamble.md` — validator returns prose before verdict, causing orchestrator misparse; resolved in v0.3 via defensive verdict parsing.
+- `learnings/proposals/tighten-validator-role-prompt.md` — accepted proposal that drove the defensive parsing improvement in v0.3.
+
+**What this means for operators:** The harness is now stable at v1.0. Install `claude-plugin.json` in your project, run `/mission-start`, follow the approval gate, and ship. The `docs/` suite covers every question a first-time operator is likely to have; the `examples/` walkthroughs cover the four most common mission shapes.
+
 ## [0.9.0] — 2026-05-23
 
 ### Added
