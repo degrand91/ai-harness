@@ -34,14 +34,16 @@ Which assertions tripped, and how often?
 
 ## Cost & tokens
 
-| Role | Model | Tokens (in/out) | Approx cost |
-|------|-------|-----------------|------------|
-| Orchestrator | Opus | ... | ... |
-| Worker (×N) | Sonnet | ... | ... |
-| Scrutiny Validator (×N) | Sonnet | ... | ... |
-| User-Testing Validator (×M) | Sonnet | ... | ... |
-| Explorer (×K) | Haiku | ... | ... |
-| **Total** | | | **$X** |
+| Role | Model | Provider | Tokens (in/out) | Approx cost |
+|------|-------|----------|-----------------|------------|
+| Orchestrator | Opus | claude | ... | ... |
+| Worker (×N) | Sonnet | claude | ... | ... |
+| Scrutiny Validator (×N) | Haiku | claude | ... | ... |
+| User-Testing Validator (×M) | Sonnet | claude | ... | ... |
+| Explorer (×K) | Haiku | claude | ... | ... |
+| **Total** | | | | **$X** |
+
+When `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` is set, the Scrutiny Validator runs on an external provider. Add a separate row for those tokens tagged with the provider name (e.g. `Scrutiny Validator (external) | n/a | openai | … | …`), so the worker-vs-validator provider split is visible across v0.3-and-later post-mortems.
 
 ## What worked
 

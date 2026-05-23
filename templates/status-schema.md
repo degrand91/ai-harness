@@ -26,11 +26,11 @@
     "explorer_default": "haiku"
   },
   "tokens": {
-    "orchestrator": { "input": 0, "output": 0 },
-    "workers": { "input": 0, "output": 0 },
-    "scrutiny": { "input": 0, "output": 0 },
-    "user_testing": { "input": 0, "output": 0 },
-    "explorers": { "input": 0, "output": 0 }
+    "orchestrator": { "input": 0, "output": 0, "provider": "claude" },
+    "workers": { "input": 0, "output": 0, "provider": "claude" },
+    "scrutiny": { "input": 0, "output": 0, "provider": "claude" },
+    "user_testing": { "input": 0, "output": 0, "provider": "claude" },
+    "explorers": { "input": 0, "output": 0, "provider": "claude" }
   },
   "checkpoints": {
     "pause_every_n_features": null,
@@ -86,3 +86,4 @@
 - Timestamps are ISO-8601 UTC.
 - `commit_shas` is an array but usually has one entry — one commit per feature.
 - `followups` is an array of feature IDs (`["F003-followup-1"]`) that were opened due to this feature's validator failures.
+- `provider` is optional per role in the `tokens` block; defaults to `"claude"` when omitted. Set to the external provider id (e.g. `"openai"`, `"gemini"`) when a non-Claude provider was used (controlled via `HARNESS_EXTERNAL_VALIDATOR_PROVIDER`).
