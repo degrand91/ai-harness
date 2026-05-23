@@ -158,6 +158,34 @@ Shipped 2026-05-23 — `docs/` (faq, glossary, troubleshooting, hook-reference),
 
 ---
 
+## Beyond v1.0 (forward planning)
+
+These are candidate v1.x phases grounded in real post-mortem evidence from the v0.3 → v1.0 chain. Unlike the "(sketch)" section below, each item here has named evidence.
+
+### v1.1 — Observability & self-audit (planned)
+
+**Goal**: close the recurring observability gaps surfaced across the chain.
+
+- **Token aggregation in `status.json`** — orchestrator reads `<usage>` metadata from every Agent tool return and writes it into the per-feature + per-mission status.json. Evidence: v0.3 post-mortem ("Token aggregation gap"), v0.4 post-mortem ("Per-feature token aggregation in `status.json` still empty"), v0.7 post-mortem (same).
+- **`harness-doctor` audit command** — a `/harness-doctor` skill that scans every active mission's filesystem state for drift: status.json out of sync with git log; mission folders with no log.md; stale checkpoint.json; missing post-mortem on closed missions. Evidence: v0.7 post-mortem ("Orchestrator doesn't update status.json between features").
+
+**Exit criterion.** A subsequent mission's post-mortem shows populated token counts AND a `/harness-doctor` run on a closed mission returns clean (no drift).
+
+### v1.2 — Validator quality upgrade (candidate)
+
+**Goal**: end the validator-prose-preamble recurrence by changing routing, not parsing.
+
+- **Switch default Scrutiny model Haiku → Sonnet** on missions with subjective contract assertions; keep Haiku for purely executable contracts. Evidence: 25+ observed validator-prose-preamble instances across the v0.3 → v1.0 chain (currently absorbed by orchestrator-side defensive parsing per v0.3 F005, but the underlying behavior recurs).
+- **Update `protocols/model-routing.md`** decision tree to make the Haiku/Sonnet choice explicit per contract shape.
+
+**Exit criterion.** Across 3 consecutive missions after v1.2, validator-prose-preamble recurrence drops below 20% (down from current ~70% on Haiku).
+
+### What stays speculative
+
+The existing "Beyond v1.0 (sketch)" items below (Agent Teams integration, Distributed orchestration, `harness eject` command) have no current evidence backing them. They remain as inspiration; promote them to a versioned phase when a real mission's post-mortem cites the gap they would close.
+
+---
+
 ## Beyond v1.0 (sketch)
 
 - **Agent Teams integration** (when stable): use `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` so Workers can be resumed via `SendMessage` instead of fresh-spawn-per-feature.
