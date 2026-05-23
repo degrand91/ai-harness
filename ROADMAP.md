@@ -33,7 +33,9 @@ Each phase below lists a concrete deliverable and an exit criterion.
 
 ---
 
-## v0.3 — Multi-provider validation
+## v0.3 — Multi-provider validation ✅ shipped
+
+Shipped 2026-05-23 — `protocols/multi-provider-validation.md`, `.claude/agents/scrutiny-validator-external.md`, env-var-driven routing, per-provider cost reporting, defensive verdict parsing. External provider integration is configured but un-exercised on this machine.
 
 **Goal**: realise the strongest version of Creator-Verifier — the Worker and the Validator on **different providers** so the Validator doesn't inherit Worker training-data biases.
 
