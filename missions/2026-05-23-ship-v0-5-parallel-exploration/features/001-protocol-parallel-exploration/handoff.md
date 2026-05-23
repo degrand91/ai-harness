@@ -33,4 +33,4 @@
 | Commit: conventional commits format | yes | See below |
 
 ### Commits
-- (see commit created below)
+- `80f98da` feat(protocol-parallel-exploration): document explorer-only concurrency rule and fanout guidance
