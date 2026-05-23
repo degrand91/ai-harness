@@ -121,6 +121,17 @@
           }
         ]
       }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/notify-at-gate.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }
