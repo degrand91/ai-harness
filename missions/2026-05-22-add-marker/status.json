@@ -1,0 +1,31 @@
+{
+  "mission_id": "2026-05-22-add-marker",
+  "state": "closed",
+  "started_at": "2026-05-22T23:49:14Z",
+  "approved_at": "2026-05-22T23:49:14Z",
+  "closed_at": "2026-05-22T23:50:30Z",
+  "abandoned_reason": null,
+  "current_feature": null,
+  "features": [
+    { "id": "F001", "slug": "add-marker", "state": "closed", "color": "green", "followups": 0 }
+  ],
+  "models": {
+    "orchestrator": "opus",
+    "worker_default": "sonnet",
+    "scrutiny_validator_default": "sonnet",
+    "user_testing_validator_default": "sonnet",
+    "explorer_default": "haiku"
+  },
+  "tokens": {
+    "orchestrator": { "input": 0, "output": 0 },
+    "workers":      { "input": 30450, "output": 0 },
+    "scrutiny":     { "input": 39626, "output": 0 },
+    "user_testing": { "input": 0, "output": 0 },
+    "explorers":    { "input": 0, "output": 0 }
+  },
+  "checkpoints": {
+    "pause_every_n_features": null,
+    "pause_after_k_followups_on_same_feature": 2
+  },
+  "post_mortem_path": "post-mortem.md"
+}

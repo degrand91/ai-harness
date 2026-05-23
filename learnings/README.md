@@ -1,0 +1,110 @@
+# Learnings
+
+The continuous-learning corpus. Every mission ends with at least one entry here. The Orchestrator reads relevant entries at the start of each new mission and injects them into planning.
+
+## Structure
+
+```
+learnings/
+├── README.md       (this file)
+├── INDEX.md        (machine-curated index; regen via scripts/learnings-index.sh once v0.4 lands)
+├── patterns/       (things that worked, reuse them)
+│   └── <slug>.md
+├── anti-patterns/  (things that failed, avoid them)
+│   └── <slug>.md
+└── proposals/      (proposed protocol/template/prompt edits, considered by future missions)
+    └── <slug>.md
+```
+
+## Pattern entry template
+
+```markdown
+---
+name: <kebab-slug>
+description: <one-line summary used for retrieval>
+introduced_in_mission: <mission-id>
+tags: [planning, contract, validator, ...]
+---
+
+## Pattern
+
+The reusable approach, stated as a rule. One paragraph.
+
+## Why
+
+The forcing function. What problem this solves.
+
+## How to apply
+
+When this pattern kicks in. The specific gesture.
+
+## Origin
+
+Brief reference back to `missions/<id>/post-mortem.md` for traceability.
+```
+
+## Anti-pattern entry template
+
+```markdown
+---
+name: <kebab-slug>
+description: <one-line summary of the failure mode>
+introduced_in_mission: <mission-id>
+tags: [validation, handoff, ...]
+---
+
+## Anti-pattern
+
+What goes wrong. The shape of the failure.
+
+## Why it's tempting
+
+The local incentive that makes you do it.
+
+## What to do instead
+
+The actual right move.
+
+## Origin
+
+`missions/<id>/post-mortem.md`
+```
+
+## Proposal entry template
+
+```markdown
+---
+name: <kebab-slug>
+description: <one-line summary of the proposed change>
+introduced_in_mission: <mission-id>
+status: open | accepted | rejected
+tags: [protocol, template, hook, ...]
+---
+
+## Problem
+
+What's wrong today.
+
+## Proposal
+
+The specific edit (file path, before → after, or a diff).
+
+## Exit criterion
+
+How the next mission will know this worked.
+
+## Decision
+
+(filled in after the next mission considers it)
+```
+
+## How the Orchestrator uses this folder
+
+At intake, the Orchestrator scans `INDEX.md`, picks the top-N relevant entries (by tag, by slug similarity to the mission goal), and includes them in its planning context. Patterns nudge it toward proven approaches; anti-patterns warn it off recurring failures; proposals get a yes/no decision.
+
+## Hygiene rules
+
+- One entry per real lesson. Don't merge.
+- Specific over general — name the assertion, the model, the file.
+- Link to the mission folder. A learning with no traceable origin is folklore.
+- If an entry contradicts a newer entry, mark the older one with `superseded_by: <slug>`.
