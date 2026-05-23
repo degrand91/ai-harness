@@ -3,7 +3,6 @@
   "agent": "orchestrator",
   "includeCoAuthoredBy": false,
   "includeGitInstructions": true,
-
   "permissions": {
     "allow": [
       "Read(./**)",
@@ -46,7 +45,6 @@
       "Bash(git push --force *)",
       "Bash(git push -f *)",
       "Bash(curl http://*)",
-      "Edit(./contract.md)",
       "Read(./.env)",
       "Read(./.env.*)"
     ],
@@ -57,7 +55,6 @@
     ],
     "defaultMode": "acceptEdits"
   },
-
   "hooks": {
     "PostToolUse": [
       {
@@ -100,6 +97,27 @@
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent-stop-record.sh",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/subagent-stop-release-lock.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-agent-spawn-serial.sh",
+            "timeout": 5
           }
         ]
       }
