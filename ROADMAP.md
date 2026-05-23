@@ -76,7 +76,9 @@ Shipped 2026-05-23 — `/explore` skill, `protocols/parallel-exploration.md`, Pr
 
 ---
 
-## v0.6 — Mission Control surface
+## v0.6 — Mission Control surface ✅ shipped
+
+Shipped 2026-05-23 — `scripts/mission-tui.sh`, `scripts/mission-html-report.sh`, `scripts/mission-diff.sh`. TUI exit criterion ("non-engineer glance") is operator-side validation; deferred to first live mission use.
 
 **Goal**: human-friendly progress without reading raw markdown.
 

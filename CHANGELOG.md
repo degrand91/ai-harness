@@ -2,6 +2,17 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-05-23
+
+### Added
+- `scripts/mission-tui.sh` — terminal UI that renders active feature, last handoff summary, and pending validation status using `watch`, `jq`, and `glow`. Gives a human-readable mission-control view without opening any markdown file.
+- `scripts/mission-html-report.sh` — generates a self-contained HTML mission report from `status.json`, `log.md`, and feature handoffs; opened in the default browser at mission close.
+- `scripts/mission-diff.sh` — side-by-side diff of `plan.md` (original intent) vs `log.md` (actual execution timeline); highlights scope drift and unplanned follow-up features.
+
+### Known gaps
+- TUI exit criterion — "a non-engineer can glance at the TUI and answer where the mission is" — is **operator-side validation, not automatable in-session**. It requires a human observer running `mission-tui.sh` against a live mission. Deferred to first qualifying mission use; tracked as a v0.6.1 follow-up.
+- `mission-html-report.sh` generates a static file but does not auto-open on Linux (uses `xdg-open`; macOS uses `open`). Cross-platform behaviour verified only on macOS.
+
 ## [0.5.0] — 2026-05-23
 
 ### Added
