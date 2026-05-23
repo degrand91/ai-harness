@@ -75,6 +75,10 @@ The only shell script is `status.sh` — it lets you check mission state without
 6. **Use the platform.** Subagents, skills, hooks, and agent memory are all native Claude Code surfaces — the harness binds them together rather than reinventing them.
 7. **The harness improves itself.** Every mission ends with a post-mortem; patterns get distilled into `learnings/` and into the orchestrator's `.claude/agent-memory/`.
 
+## Credits
+
+Built on insights from ECC ([affaan-m/ECC](https://github.com/affaan-m/ECC), MIT). See [docs/credits.md](docs/credits.md).
+
 ## Status
 
 **v1.0** — shipped 2026-05-23. Full Claude Code integration: subagents, skills, hooks, settings, multi-provider model routing, learning loop, parallel exploration, mission control (status/resume/list), resumability, and production infrastructure. See [ROADMAP.md](ROADMAP.md) for the v0.1 → v1.0 journey and the Beyond v1.0 forward planning section.

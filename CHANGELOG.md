@@ -2,6 +2,34 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-05-23
+
+### Added (imported from ECC under MIT)
+
+- **8 specialist agents** ported from ECC (https://github.com/affaan-m/ECC):
+  - `architect` (opus) — system design specialist
+  - `harness-optimizer` (sonnet) — meta-tuning agent
+  - `refactor-cleaner` (sonnet) — dead-code cleanup
+  - `doc-updater` (haiku) — documentation automation
+  - `security-reviewer` (sonnet) — OWASP/secrets/injection detection
+  - `code-reviewer` — general code review
+  - `silent-failure-hunter` — flaky test / hidden error detection
+  - `tdd-guide` — TDD workflow enforcement
+
+- **1 new skill**: `/skill-stocktake` — audit harness `.claude/skills/` inventory (ECC-inspired minimal impl).
+- **1 new hook**: `.claude/hooks/post-tool-use-failure.sh` — PostToolUseFailure event handler (ECC-inspired).
+- **1 new script**: `scripts/harness-audit.sh` — operator-readiness audit, 9 checks (original POSIX bash, inspired by ECC's `harness-audit.js`).
+- **New file**: `docs/credits.md` — attribution catalog.
+
+### Changed
+
+- `README.md` — added ECC credits reference.
+
+### Known gaps
+
+- The skill, hook, and harness-audit.sh script are **ECC-INSPIRED minimal implementations**, not verbatim ports — the auto-mode classifier blocked network fetches of ECC raw content during the porting mission. The 8 agent files ARE verbatim ports (fetched successfully) with only frontmatter adjustment (name=stem) and added ECC attribution comments.
+- The 8 ported agents and 1 new skill are not dynamically loadable in the current session (same session-static registry limitation as previous mission additions).
+
 ## [1.0.2] — 2026-05-23
 
 ### Changed
