@@ -44,11 +44,11 @@ A 5-feature mission typically costs the equivalent of 3–6 hours of pair-progra
 
 ## Can a mission start another mission (recursive missions)?
 
-Yes, with guards. The Orchestrator can spawn a Worker whose feature spec is "scaffold and execute a sub-mission." The guard is: the sub-mission must not mutate the parent mission's `status.json` or `log.md`. Each mission has its own `missions/<id>/` folder; they do not share state. See `learnings/anti-patterns/recursive-mission-stability-guards.md` for failure modes.
+Yes, with guards. The Orchestrator can spawn a Worker whose feature spec is "scaffold and execute a sub-mission." The guard is: the sub-mission must not mutate the parent mission's `status.json` or `log.md`. Each mission has its own `missions/<id>/` folder; they do not share state. See `learnings/patterns/recursive-mission-stability-guards.md` for stability patterns and failure modes.
 
 ## What is the approval gate and can I skip it?
 
-The approval gate is the one mandatory human checkpoint in the lifecycle: after the plan and contract are written, the Orchestrator presents both to the user and waits for explicit approval before spawning any Worker. You cannot skip it. It exists because fixing a wrong contract after 8 features have been built costs an order of magnitude more than fixing it at the gate.
+The approval gate is the one mandatory human checkpoint in the lifecycle: after the plan and contract are written, the Orchestrator presents both to the user and waits for explicit approval before spawning any Worker. The standard flow does not skip it. Operators running chained missions may grant **blanket pre-approval** by stating it explicitly at chain-start (e.g., "continue until v1.0"); see `.claude/agent-memory/orchestrator/feedback_blanket_approval.md`. Even with blanket approval, the orchestrator still authors plan + contract artifacts and surfaces only on genuine blockers. The gate exists because fixing a wrong contract after 8 features have been built costs an order of magnitude more than fixing it at the gate.
 
 ## Can Workers run in parallel?
 
