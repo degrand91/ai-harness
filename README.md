@@ -53,7 +53,7 @@ The only shell script is `status.sh` — it lets you check mission state without
 | [CLAUDE.md](CLAUDE.md) | Operating manual every Claude session reads on entry |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The five strategies, the three roles, state model |
 | [AGENTS.md](AGENTS.md) | Team roster + agent communication graph |
-| [ROADMAP.md](ROADMAP.md) | Phased iteration plan, v0.1 → v1.0 |
+| [ROADMAP.md](ROADMAP.md) | v0.1 → v1.0 journey and Beyond v1.0 forward planning |
 | **`.claude/agents/`** | Registered subagents: orchestrator, worker, scrutiny-validator, user-testing-validator, explorer |
 | **`.claude/skills/`** | Slash-skills: mission-start, mission-status, mission-resume, mission-review, mission-list, scaffold-feature, contract-check, log |
 | **`.claude/hooks/`** | Procedure-enforcing hooks (PostToolUse log append, Stop block on red, SessionStart status inject, SubagentStop record) |
@@ -77,4 +77,4 @@ The only shell script is `status.sh` — it lets you check mission state without
 
 ## Status
 
-**v0.2** — full Claude Code integration (subagents, skills, hooks, settings). One smoke-test mission completed end-to-end. Roadmap in [ROADMAP.md](ROADMAP.md).
+**v1.0** — shipped 2026-05-23. Full Claude Code integration: subagents, skills, hooks, settings, multi-provider model routing, learning loop, parallel exploration, mission control (status/resume/list), resumability, and production infrastructure. See [ROADMAP.md](ROADMAP.md) for the v0.1 → v1.0 journey and the Beyond v1.0 forward planning section.

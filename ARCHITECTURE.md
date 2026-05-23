@@ -241,4 +241,4 @@ Post-mortems → patterns → injected into next orchestrator prompt. See `learn
 
 ## 12. Iteration
 
-The harness is v0.1. See [ROADMAP.md](ROADMAP.md) for the v0.2 → v1.0 path. Every mission should leave the harness slightly better than it found it.
+The harness is **v1.0** (shipped 2026-05-23). See [ROADMAP.md](ROADMAP.md) for the v0.1 → v1.0 journey and Beyond v1.0 forward planning. The v0.3–v1.0 arc delivered multi-provider model routing, the continuous learning loop, parallel exploration, mission control skills, resumability, anti-template guardrails, background processing, and production infrastructure. Every mission should leave the harness slightly better than it found it.
