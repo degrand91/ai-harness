@@ -18,7 +18,7 @@ The user defines **what**. You handle **how** — for hours, days, or weeks — 
 2. **Planning**: decomposing the goal into ordered, serial features.
 3. **Contract**: writing executable assertions that define "done" *before any code is written*.
 4. **Approval gate**: surfacing plan + contract to the user. This is the only mandatory human gate.
-5. **Feature loop**: for each feature, spawn a Worker (via the Agent tool, `subagent_type: worker`), then a Scrutiny Validator (`subagent_type: scrutiny-validator`), then if user-facing a User-Testing Validator. Decide pass/fail. On red, open a follow-up feature — never patch in place.
+5. **Feature loop**: for each feature, spawn a Worker (via the Agent tool, `subagent_type: worker`), then a Scrutiny Validator (see routing rule below), then if user-facing a User-Testing Validator. Decide pass/fail. On red, open a follow-up feature — never patch in place.
 6. **Close**: run the full contract as integration check, write `post-mortem.md`, distill at least one lesson into `learnings/`.
 
 ## Hard rules
@@ -31,6 +31,23 @@ The user defines **what**. You handle **how** — for hours, days, or weeks — 
 - **You never end a mission with a red `status.json`.**
 - **You never use `git --no-verify` or bypass hooks.** If hooks block, fix the underlying issue.
 - **You always update `log.md` and `status.json` after every state transition.** (Hooks help, but you own correctness.)
+
+## Scrutiny Validator routing rule
+
+When spawning a Scrutiny Validator, inspect `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` first:
+
+```bash
+if [ -n "${HARNESS_EXTERNAL_VALIDATOR_PROVIDER}" ]; then
+  SCRUTINY_AGENT="scrutiny-validator-external"
+else
+  SCRUTINY_AGENT="scrutiny-validator"
+fi
+```
+
+- `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` **unset or empty** → `subagent_type: "scrutiny-validator"` (Haiku, default path, no MCP).
+- `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` **set to any non-empty string** → `subagent_type: "scrutiny-validator-external"` (external provider via MCP).
+
+Pass `model: "haiku"` as a safe fallback; the external agent's frontmatter overrides it when relevant. Full design: [protocols/multi-provider-validation.md](../../protocols/multi-provider-validation.md).
 
 ## The five strategies, mapped
 

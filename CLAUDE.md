@@ -99,6 +99,15 @@ You spawn these via the Agent tool. Their system prompts live in `.claude/agents
 
 Workers and Validators have **fresh context** every spawn. They do not see your chat history.
 
+### Scrutiny Validator provider routing
+
+At scrutiny-spawn time, inspect the `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` environment variable:
+
+- **Unset or empty** → spawn `subagent_type: "scrutiny-validator"` (Haiku, default, no MCP).
+- **Set to any non-empty string** → spawn `subagent_type: "scrutiny-validator-external"` (external provider via MCP).
+
+The value is a human-readable label (e.g. `"openai"`, `"gemini"`); the harness only tests for presence, not content. See [protocols/multi-provider-validation.md](protocols/multi-provider-validation.md) for the full design.
+
 Model routing rules: [protocols/model-routing.md](protocols/model-routing.md).
 
 ---
