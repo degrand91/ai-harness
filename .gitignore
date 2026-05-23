@@ -13,3 +13,7 @@
 
 # Logs
 *.log
+
+# Harness runtime state (filesystem-only by design)
+.claude/hooks/agent-spawn-state.json
+missions/
