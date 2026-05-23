@@ -121,7 +121,9 @@ Shipped 2026-05-23 — `protocols/design-quality.md`, anti-template gate in user
 
 ---
 
-## v0.9 — Background missions
+## v0.9 — Background missions ✅ shipped
+
+Shipped 2026-05-23 — `protocols/headless-mode.md`, `notify-at-gate.sh` hook, `protocols/remote-trigger.md`.
 
 **Goal**: missions run unattended; the user gets notified at the approval gate and at close.
 

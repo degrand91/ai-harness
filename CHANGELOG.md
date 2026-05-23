@@ -2,6 +2,17 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] — 2026-05-23
+
+### Added
+- `protocols/headless-mode.md` — protocol for running the harness in fully headless / non-interactive mode via `claude --agent orchestrator -p "..."`. Documents the `--headless` flag semantics, environment variable overrides (`HARNESS_HEADLESS=1`), and how the Orchestrator detects it is running unattended and adjusts its gate behaviour accordingly.
+- `notify-at-gate.sh` hook — `Notification` event hook that fires when the Orchestrator reaches the approval gate or mission close. Ships three delivery adapters: OS notification (`osascript` / `notify-send`), Slack webhook (`HARNESS_SLACK_WEBHOOK`), and email via `sendmail` (`HARNESS_NOTIFY_EMAIL`). Adapter selection is automatic based on which env vars are set; multiple adapters can be active simultaneously.
+- `protocols/remote-trigger.md` — "wake me when the gate is reached" protocol. Documents the full unattended mission lifecycle: cron / CI schedules a headless run, Orchestrator progresses to the gate, `notify-at-gate.sh` pages the user, the user resumes the session and approves. Includes a reference wiring example for GitHub Actions and a macOS launchd plist.
+
+### Known gaps
+- Real overnight / cron deployment requires the operator to wire `notify-at-gate.sh` to their environment (set `HARNESS_SLACK_WEBHOOK` or `HARNESS_NOTIFY_EMAIL`, or rely on OS notifications). The harness ships the infrastructure; environment-specific wiring is the operator's responsibility.
+- The literal exit criterion — "mission ran overnight unattended, paged the user at the gate, resumed in the morning" — is calendar-bound and cannot be demonstrated in-session. Infrastructure is complete and smoke-tested; the end-to-end overnight path is tracked as a v0.9.1 follow-up once a qualifying mission is scheduled.
+
 ## [0.8.0] — 2026-05-23
 
 ### Added
