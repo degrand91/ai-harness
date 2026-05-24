@@ -87,3 +87,11 @@
 - `commit_shas` is an array but usually has one entry — one commit per feature.
 - `followups` is an array of feature IDs (`["F003-followup-1"]`) that were opened due to this feature's validator failures.
 - `provider` is optional per role in the `tokens` block; defaults to `"claude"` when omitted. Set to the external provider id (e.g. `"openai"`, `"gemini"`) when a non-Claude provider was used (controlled via `HARNESS_EXTERNAL_VALIDATOR_PROVIDER`).
+
+### Token aggregation
+
+The `tokens` block at the mission level is populated **automatically** by the `SubagentStop` hook (`subagent-stop-record.sh`):
+
+- Whenever a subagent completes, the hook reads `input_tokens` / `output_tokens` from the SubagentStop event stdin payload and increments the matching role counter (`workers`, `scrutiny`, `user_testing`, `explorers`).
+- Values **accumulate** across the full mission lifetime — they are not per-feature snapshots.
+- Zero values indicate one of two things: (a) the mission was created before this feature shipped, or (b) the SubagentStop payload did not carry token data (e.g. an older Claude Code version or a local stub).

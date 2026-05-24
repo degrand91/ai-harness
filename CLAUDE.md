@@ -140,7 +140,7 @@ missions/2026-05-23-add-oauth/
 └── post-mortem.md        # written at close by /mission-review
 ```
 
-`status.json` and `log.md` are the **broadcast channel**. The `PostToolUse` hook appends to `log.md` automatically on every edit inside `missions/<id>/`. You still own `status.json` writes.
+`status.json` and `log.md` are the **broadcast channel**. The `PostToolUse` hook appends to `log.md` automatically on every edit inside `missions/<id>/`. You still own `status.json` writes. Token usage is captured automatically: the `SubagentStop` hook reads `input_tokens` / `output_tokens` from the event payload and accumulates them into the `tokens` block of the active mission's `status.json` by role.
 
 ---
 
