@@ -10,6 +10,7 @@
 
 ## Anti-patterns
 
+- [haiku-scrutiny-hallucination](anti-patterns/haiku-scrutiny-hallucination.md) — Haiku scrutiny validator fabricates bash assertion results without running any tools, reporting false failures. (from `2026-05-24-browser-qa-capability`; recurred in `2026-05-24-browser-qa-capability`)
 - [validator-prose-preamble](anti-patterns/validator-prose-preamble.md) — Validator subagents tend to wrap the structured verdict in a conversational preamble, breaking downstream parsing. (from `2026-05-22-add-marker`; recurred in `2026-05-23-add-marker2` and `2026-05-23-ship-v0-3-multi-provider`)
 
 ## Proposals

@@ -1,3 +1,8 @@
+---
+name: browser-qa
+description: Playwright MCP testing patterns for the user-testing-validator
+---
+
 # Skill: browser-qa
 
 ## 1. Overview
