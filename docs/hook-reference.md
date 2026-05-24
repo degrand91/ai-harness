@@ -44,6 +44,44 @@ The handler reads only `tool_input.file_path`. The `content` field is ignored.
 
 ---
 
+## PostToolUseFailure — `post-tool-use-failure.sh`
+
+**Trigger.** Fires after any tool call that exits with an error (matcher fires on the `PostToolUseFailure` event, not `PostToolUse`).
+
+**Purpose.** Logs a one-line failure entry to the active mission's `log.md`. Gives the Orchestrator an audit trail of tool errors without requiring manual logging. Exits 0 unconditionally so it never interferes with Claude Code's own error-handling path.
+
+**Handler.** `.claude/hooks/post-tool-use-failure.sh`
+
+**Stdin schema.**
+
+```json
+{
+  "hook_event_name": "PostToolUseFailure",
+  "tool_name": "Bash",
+  "error": "exit status 1: command not found: jq"
+}
+```
+
+All three fields are optional. The hook falls back to `"unknown"` for `tool_name` and `""` for `error` if absent.
+
+**Exit codes.**
+
+| Code | Meaning |
+|------|---------|
+| 0 | Always. Hook failure must never block Claude Code error handling. |
+
+**Behaviour.** Resolves the harness root from `$CLAUDE_PROJECT_DIR`. If that variable is unset, the hook exits 0 immediately (no logging). Finds the most-recently-modified `missions/*/log.md` and appends one line. The error string is truncated to 200 characters to keep the log readable.
+
+**Example log line produced.**
+
+```
+[2026-05-23T14:31:02Z] [session=abc123] tool-failure tool=Bash error=exit status 1: command not found: jq
+```
+
+If no mission log exists (e.g., before any mission has been started), the hook exits 0 silently.
+
+---
+
 ## Stop — `stop-no-red-status.sh`
 
 **Trigger.** Fires when the Claude Code session attempts to end cleanly.

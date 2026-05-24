@@ -74,6 +74,55 @@ At least one of:
 
 Linked here: `[[slug]]` references for cross-mission searchability.
 
+## Cost Summary
+
+Aggregate token usage across all agent roles for this mission. Pull numbers from `log.md` SubagentStop entries or the Claude Code usage panel.
+
+| Role | Input tokens | Output tokens | Estimated cost |
+|------|-------------|---------------|---------------|
+| Orchestrator | | | |
+| Worker (×N) | | | |
+| Scrutiny Validator (×N) | | | |
+| User-Testing Validator (×M) | | | |
+| Explorer (×K) | | | |
+| Scout | | | |
+| **Total** | | | **$** |
+
+If `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` was active, add a row for the external provider tagged with its name (e.g. `Scrutiny Validator (external) — openai`).
+
+## Validator Quality
+
+One entry per feature that went through validation. Captures whether the validator's verdict was well-calibrated.
+
+| Feature | Scrutiny result | User-test result | False positive? | Notes |
+|---------|-----------------|-----------------|-----------------|-------|
+| F001 | green | green | no | |
+| F002 | red | n/a | no | assertion C-004 tripped legitimately |
+| F003 | green | green | no | |
+
+A **false positive** is a red verdict later determined to be a contract defect rather than an implementation defect.
+
+## Learnings Created
+
+Links to any patterns or anti-patterns distilled from this mission and added to the learning catalogue.
+
+| Type | File | Summary |
+|------|------|---------|
+| pattern | `learnings/patterns/<slug>.md` | One-line summary |
+| anti-pattern | `learnings/anti-patterns/<slug>.md` | One-line summary |
+
+_(Leave table empty if no new learnings were created — that is itself a signal worth noting in "What to change".)_
+
+## Contract Amendments
+
+Cross-reference any assertions that were amended mid-mission after approval. Each amendment should have a corresponding entry in the mission's contract amendment log (`contract.md` revision history or a separate `contract-amendments.md`).
+
+| Assertion | Original | Amendment | Reason |
+|-----------|----------|-----------|--------|
+| C-006 | ... | ... | Model consistently failed a fragile assertion; assertion was tightened to match intent |
+
+_(Write "None" if the contract was not amended after approval.)_
+
 ## Signed off
 
 - [ ] User reviewed

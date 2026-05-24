@@ -101,6 +101,8 @@ You spawn these via the Agent tool. Their system prompts live in `.claude/agents
 
 Workers and Validators have **fresh context** every spawn. They do not see your chat history.
 
+In addition to the core mission-loop agents above, the harness includes **8 ECC-ported standalone agents** (architect, code-reviewer, doc-updater, harness-optimizer, refactor-cleaner, security-reviewer, silent-failure-hunter, tdd-guide). These are not part of the feature loop — they are task-specific assistants you can spawn on demand. See [AGENTS.md](AGENTS.md) for the full table of models and tools.
+
 ### Scrutiny Validator provider routing
 
 At scrutiny-spawn time, inspect the `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` environment variable:

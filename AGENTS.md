@@ -83,6 +83,25 @@ Agent(
 - Validator ↔ Validator chat
 - Anything peer-to-peer
 
+## ECC-Ported Standalone Agents
+
+These agents are **not** part of the core mission loop. They are standalone assistants ported from ECC (MIT) that the Orchestrator or user can spawn for specific tasks at any time. They do not produce handoffs or feed into the validation pipeline.
+
+| Agent | `subagent_type` | Default model | Tools | Purpose |
+|-------|-----------------|---------------|-------|---------|
+| **architect** | `architect` | opus | Read, Grep, Glob | Architectural analysis and system design decisions |
+| **code-reviewer** | `code-reviewer` | sonnet | Read, Grep, Glob, Bash | Code quality review, patterns, and best practices |
+| **doc-updater** | `doc-updater` | haiku | Read, Write, Edit, Bash, Grep, Glob | Documentation maintenance and updates |
+| **harness-optimizer** | `harness-optimizer` | sonnet | Read, Grep, Glob, Bash, Edit | Harness performance and configuration improvements |
+| **refactor-cleaner** | `refactor-cleaner` | sonnet | Read, Write, Edit, Bash, Grep, Glob | Dead code removal and structural refactoring |
+| **security-reviewer** | `security-reviewer` | sonnet | Read, Write, Edit, Bash, Grep, Glob | Security vulnerability analysis (OWASP, secrets, auth) |
+| **silent-failure-hunter** | `silent-failure-hunter` | sonnet | Read, Grep, Glob, Bash | Detects swallowed errors and non-surfaced failures |
+| **tdd-guide** | `tdd-guide` | sonnet | Read, Write, Edit, Bash, Grep | Test-driven development guidance and enforcement |
+
+Their prompts live in `.claude/agents/`. Spawn them via the Agent tool with the matching `subagent_type`.
+
+---
+
 ## Where to read more
 
 | To learn… | Read |
