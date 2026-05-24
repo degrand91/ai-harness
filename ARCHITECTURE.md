@@ -57,7 +57,7 @@ The harness composes **#1, #2, #4, #5**. It deliberately omits #3.
 
 ### Validators (short-lived subagents, never see implementer reasoning)
 - **Scrutiny Validator** — runs lint/typecheck/test, performs code review, checks contract assertions one by one.
-- **User-Testing Validator** — launches the app, exercises flows like a QA engineer (Playwright, computer-use, manual smoke).
+- **User-Testing Validator** — launches the app, exercises flows like a QA engineer via Playwright MCP browser tools (navigate, click, fill, screenshot). Configured in `.mcp.json`. See [protocols/browser-qa.md](protocols/browser-qa.md).
 - Sees: the validation contract and the diff. Does **not** see the worker's reasoning or handoff narrative.
 - Returns a verdict: green / red / red-with-followup-spec.
 
@@ -176,7 +176,7 @@ No single model is best at planning, implementation, and validation.
 | Planning (Orchestrator) | Slow careful reasoning, strategic questions, constraint analysis | Opus |
 | Implementation (Worker) | Code fluency and creativity, fast generation, tool use | Sonnet |
 | Validation (Scrutiny) | Strict instruction-following; ideally a different provider to avoid training-data bias | Sonnet or Haiku |
-| Validation (User-Testing) | Tool use, browser/computer-use | Sonnet |
+| Validation (User-Testing) | Tool use, Playwright MCP browser tools | Sonnet |
 | Exploration | Cheap parallel reads | Haiku |
 
 See [protocols/model-routing.md](protocols/model-routing.md). The Agent tool accepts a `model` parameter — use it.

@@ -57,10 +57,24 @@ A verdict matching [templates/validation-verdict.md](../templates/validation-ver
 
 ## Tools
 
-- Bash (to launch the app).
-- Browser automation (Playwright via Bash, or a computer-use tool if available via MCP).
+- Bash (to launch the app, run auxiliary commands).
+- Playwright MCP browser tools (`browser_navigate`, `browser_click`, `browser_fill`, `browser_type`, `browser_screenshot`, `browser_snapshot`) — primary mechanism for web UI interaction. Configured via `.mcp.json`.
 - Read for the launch recipe and the contract.
 - No Write or Edit on application code.
+
+## Playwright MCP integration
+
+The Playwright MCP server is configured in `.mcp.json` at the project root. When the server is present, browser interaction must use the MCP tools rather than shelling out to a Playwright CLI or using curl against the running application.
+
+Key tools and their roles:
+
+- `browser_navigate` — load a URL in the browser.
+- `browser_click` — interact with buttons, links, and clickable elements.
+- `browser_fill` — populate input fields with text values.
+- `browser_screenshot` — capture a screenshot at a decisive step; store under `features/NNN/evidence/`.
+- `browser_snapshot` — obtain the current accessibility tree to verify element presence and content.
+
+See [protocols/browser-qa.md](browser-qa.md) for the full browser QA protocol including the typical workflow, evidence standards, and anti-patterns.
 
 ## Termination
 

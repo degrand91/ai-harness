@@ -91,6 +91,34 @@ Add behavioral, executable, negative, accessibility, and performance assertions 
 - Be independently verifiable.
 - Be unambiguous to a reader who has never seen the code.
 
+### Browser-specific assertion examples (for web UI missions)
+
+### C-0XX — executable (browser)
+
+**Statement.** Submitting the contact form with valid data shows a success confirmation.
+
+**Verification.** (User-Testing Validator via Playwright MCP)
+```
+1. browser_navigate → http://localhost:<port>/contact
+2. browser_fill → name field with "Test User"
+3. browser_fill → email field with "test@example.com"
+4. browser_fill → message field with "Hello"
+5. browser_click → Submit button
+6. browser_snapshot → verify element containing "Thank you" or "success" is visible
+```
+
+### C-0XX — executable (browser)
+
+**Statement.** Clicking the "Dashboard" link navigates to /dashboard and shows the user's name.
+
+**Verification.** (User-Testing Validator via Playwright MCP)
+```
+1. browser_navigate → http://localhost:<port>/
+2. browser_click → "Dashboard" link
+3. browser_snapshot → verify URL contains "/dashboard"
+4. browser_snapshot → verify element containing user's name is visible
+```
+
 ## Coverage check
 
 Before approval, confirm:
