@@ -48,16 +48,35 @@ for mission_dir in "$MISSIONS"/*/; do
   if [ -n "$reds" ]; then
     PROBLEMS+=("Mission ${id}: red features without follow-ups: ${reds}")
   fi
+
+  # Detect stuck in-progress features: executing missions with a feature that
+  # has state="in_progress" and color=null indicate the worker never completed
+  # (or the orchestrator forgot to update state after the feature closed).
+  # We only check missions still in "executing" state — abandoned/paused/closed
+  # are already filtered out by the case statement above.
+  if [ "$state" = "executing" ]; then
+    stuck="$(jq -r '
+      .features // [] |
+      map(select(.state == "in_progress" and .color == null)) |
+      map(.id) |
+      join(",")
+    ' "$status_file" 2>/dev/null)"
+
+    if [ -n "$stuck" ]; then
+      PROBLEMS+=("Mission ${id}: stuck in-progress feature(s) with no outcome color: ${stuck}")
+    fi
+  fi
 done
 
 if [ ${#PROBLEMS[@]} -gt 0 ]; then
   {
-    echo "[Stop hook] Refusing to end — open red status detected:"
+    echo "[Stop hook] Refusing to end — unresolved mission issues detected:"
     for p in "${PROBLEMS[@]}"; do
       echo "  - $p"
     done
     echo
-    echo "Open a follow-up feature, or explicitly abandon/pause the mission by setting status.json.state."
+    echo "For red features: open a follow-up feature, or explicitly abandon/pause the mission."
+    echo "For stuck in-progress features: close the feature properly, or set mission state to abandoned/paused."
   } >&2
   exit 2
 fi
