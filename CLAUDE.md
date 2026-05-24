@@ -235,12 +235,17 @@ git clone https://github.com/stefanodegrandis/harness.git harness
 # Copy the .claude/ directory into your target project
 cp -r harness/.claude /path/to/your/project/.claude
 
+# Copy the MCP configuration (enables browser QA via Playwright MCP)
+cp harness/.mcp.json /path/to/your/project/.mcp.json
+
 # Open Claude Code in your target project — the orchestrator activates automatically
 cd /path/to/your/project
 claude
 ```
 
 The `.claude/settings.json` file sets `agent: orchestrator`, so the session opens as the Orchestrator without any extra flags.
+
+`.mcp.json` registers the Playwright MCP server, giving harness agents browser automation tools for user-testing validation. After copying, run `bash scripts/setup-browser-qa.sh` to verify the setup.
 
 ### Via `claude plugin install` (when supported)
 
