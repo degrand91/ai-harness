@@ -66,6 +66,22 @@ A verdict file matching [templates/validation-verdict.md](../templates/validatio
 - Verdict file written.
 - If a contract assertion is malformed (un-runnable), the Validator reports `skipped` with reason — the Orchestrator must fix the contract.
 
+## Tool-use integrity
+
+Every executable assertion in the contract slice must be run via the Bash tool. This is non-negotiable.
+
+**Mandate:** The Scrutiny Validator must invoke the Bash tool for every assertion that has an expected exit code or produces observable output. It must not predict, guess, or fabricate results based on reading the diff alone.
+
+**Rationale:** A validator that does not run assertions provides zero verification value. Worse, a validator that fabricates `pass` verdicts actively misleads the Orchestrator into shipping defective code. The entire Creator-Verifier strategy depends on the verifier independently executing the same checks the contract defines.
+
+**Guard:** The Orchestrator checks the `tool_uses` count on the Validator's return. If the count is zero and the verdict contains assertion results, the results were fabricated. The Orchestrator must re-spawn the Validator with escalated instructions noting the protocol violation.
+
+**Detection heuristic:** If the verdict contains assertion results (pass/fail) but the Validator's tool_uses count is 0, treat all results as fabricated and the verdict as invalid. Re-spawn.
+
+**Blocked assertions:** If a command cannot be run (missing binary, permission error, unreachable service), the Validator reports the assertion as `blocked` with a reason — not `pass` and not `fail`. A `blocked` result is honest; a fabricated `pass` is a protocol violation.
+
+**Anti-pattern reference:** See [`learnings/anti-patterns/haiku-scrutiny-hallucination.md`](../learnings/anti-patterns/haiku-scrutiny-hallucination.md) for a documented case of this failure mode, including how it manifested and how it was detected.
+
 ## Anti-patterns
 
 - ❌ Reading the Worker's handoff before deciding.
@@ -73,3 +89,4 @@ A verdict file matching [templates/validation-verdict.md](../templates/validatio
 - ❌ Marking an assertion `pass` because the Worker said so.
 - ❌ Skipping an assertion as "obviously fine."
 - ❌ Bundling all failures into one follow-up spec — write them out independently so the Orchestrator can sequence them.
+- ❌ Fabricating Bash command outputs without running the Bash tool — zero tool calls with assertion verdicts is always a protocol violation.
