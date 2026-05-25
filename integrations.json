@@ -1,0 +1,71 @@
+{
+  "$schema": "See templates/integrations-schema.md",
+  "integrations": [
+    {
+      "id": "openai-image",
+      "name": "OpenAI Image Generation",
+      "type": "image",
+      "provider": "openai",
+      "enabled": false,
+      "description": "Generate and edit images using DALL-E 3 and GPT Image via the OpenAI API.",
+      "env_vars": {
+        "OPENAI_API_KEY": {
+          "required": true,
+          "description": "OpenAI API key (starts with sk-)"
+        }
+      },
+      "endpoint": "https://api.openai.com/v1/images/generations",
+      "capabilities": ["generate", "edit", "variation"],
+      "usage": {
+        "command": "curl -s -H 'Authorization: Bearer $OPENAI_API_KEY' -H 'Content-Type: application/json' -d '{\"model\":\"dall-e-3\",\"prompt\":\"<PROMPT>\",\"n\":1,\"size\":\"1024x1024\"}' https://api.openai.com/v1/images/generations",
+        "output_format": "JSON with url field",
+        "cost_per_call": "~$0.04 per image (1024x1024)"
+      },
+      "docs_url": "https://platform.openai.com/docs/api-reference/images"
+    },
+    {
+      "id": "nanobanana",
+      "name": "NanoBanana / Google Gemini Image Generation",
+      "type": "image",
+      "provider": "google",
+      "enabled": false,
+      "description": "Generate and edit images with text rendering using Google Gemini via the Generative Language API.",
+      "env_vars": {
+        "GOOGLE_API_KEY": {
+          "required": true,
+          "description": "Google API key for Generative Language API access"
+        }
+      },
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+      "capabilities": ["generate", "edit", "text-rendering"],
+      "usage": {
+        "command": "curl -s -H 'Content-Type: application/json' -d '{\"contents\":[{\"parts\":[{\"text\":\"<PROMPT>\"}]}],\"generationConfig\":{\"responseModalities\":[\"TEXT\",\"IMAGE\"]}}' 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=$GOOGLE_API_KEY'",
+        "output_format": "JSON with candidates[].content.parts[].inlineData.data (base64 PNG)",
+        "cost_per_call": "Free tier available; ~$0.02 per image via API"
+      },
+      "docs_url": "https://ai.google.dev/gemini-api/docs/image-generation"
+    },
+    {
+      "id": "lemonfox-audio",
+      "name": "LemonFox Audio (TTS + STT)",
+      "type": "audio",
+      "provider": "lemonfox",
+      "enabled": false,
+      "description": "Text-to-speech and speech-to-text via the LemonFox audio API.",
+      "env_vars": {
+        "LEMONFOX_API_KEY": {
+          "required": true,
+          "description": "LemonFox API key for audio endpoint access"
+        }
+      },
+      "endpoint": "https://api.lemonfox.ai/v1/audio",
+      "capabilities": ["text-to-speech", "speech-to-text"],
+      "usage": {
+        "command": "curl -s -H 'Authorization: Bearer $LEMONFOX_API_KEY' -H 'Content-Type: application/json' -d '{\"model\":\"tts-1\",\"input\":\"<TEXT>\",\"voice\":\"alloy\"}' https://api.lemonfox.ai/v1/audio/speech --output speech.mp3",
+        "output_format": "Binary audio file (mp3 for TTS); JSON transcript for STT",
+        "cost_per_call": "~$0.50 per million credits ($5/month for 10M credits)"
+      },
+      "docs_url": "https://www.lemonfox.ai/apis"
+    }
+  ]
+}
