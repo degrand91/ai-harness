@@ -32,6 +32,22 @@ Restate the goal in the user's own words. Ask **only** the questions you cannot 
 
 Resolve all relative dates to absolute dates.
 
+**GitHub issue intake.** If the goal is or contains a GitHub issue URL (e.g., `https://github.com/owner/repo/issues/123`), fetch the issue details before doing anything else:
+
+```bash
+gh issue view <url> --json title,body,labels
+```
+
+Use the returned `title` as the mission slug basis and `body` as the verbatim goal text to record in `mission.md`. Store the original issue URL in `mission.md` under a `## Source` heading so it can be referenced at close. The `gh` CLI must be authenticated (`gh auth status`) for this to work — if it is not, fall back to treating the URL as a plain text goal and note the auth issue.
+
+Example:
+
+```
+/mission-start https://github.com/owner/repo/issues/42
+```
+
+This fetches issue #42, uses its title and body to populate the mission, and records the URL for auto-close at review time.
+
 ## 2. Decide mission id
 
 Format: `YYYY-MM-DD-<kebab-slug>` based on today's date and a 3–5 word slug of the goal. Strip filler words ("the", "a", "to", "of"). Examples:

@@ -60,3 +60,4 @@ These documents govern runtime configuration and deployment variants of the harn
 | [multi-provider-validation.md](multi-provider-validation.md) | How to enable external-provider scrutiny via HARNESS_EXTERNAL_VALIDATOR_PROVIDER |
 | [headless-mode.md](headless-mode.md) | Running the harness non-interactively: CI triggers, environment flags, approval bypass |
 | [remote-trigger.md](remote-trigger.md) | Triggering missions remotely: webhook schema, authentication, and safety constraints |
+| [github-integration.md](github-integration.md) | Issue-driven intake, CI assertions via `gh run watch`, and auto-close of source issues at mission close |

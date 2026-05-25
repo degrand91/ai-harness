@@ -120,6 +120,19 @@ Add behavioral, executable, negative, accessibility, and performance assertions 
 4. browser_snapshot → verify element containing user's name is visible
 ```
 
+### C-0XX — executable (CI)
+
+**Statement.** The CI pipeline passes on the current branch.
+
+**Verification.** (Orchestrator or Scrutiny Validator via `gh` CLI)
+```
+1. Push the current branch: `git push -u origin <branch>`
+2. Wait for CI: `gh run watch --exit-status`
+3. Verify: exit 0 means all checks passed
+```
+
+> CI assertions are optional. Only add them when the target project has GitHub Actions configured.
+
 ## Coverage check
 
 Before approval, confirm:

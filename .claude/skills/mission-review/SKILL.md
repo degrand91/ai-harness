@@ -49,7 +49,15 @@ Close out a mission. Run the post-mortem ritual and distill at least one reusabl
 
 8. **Update `status.json`**: set `state: "closed"` (or `"abandoned"`), `closed_at: <now UTC>`, `post_mortem_path: "post-mortem.md"`. Append to `log.md`.
 
-9. **Surface the post-mortem path and new learnings** to the user.
+9. **Close the source GitHub issue (optional).** If `mission.md` contains a `## Source` heading with a GitHub issue URL, close the issue with a summary comment:
+
+   ```bash
+   gh issue close <url> --comment "Resolved via harness mission <id>. See post-mortem for details."
+   ```
+
+   This step only applies when the mission was started from a GitHub issue (`/mission-start <issue-url>`). Skip silently if no issue URL is present, if `gh` is not authenticated, or if the repo does not have write permissions on the issue tracker.
+
+10. **Surface the post-mortem path and new learnings** to the user.
 
 ## Anti-patterns
 
