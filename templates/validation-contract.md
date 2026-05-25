@@ -13,6 +13,7 @@
 - Test runner: `<command>` (e.g., `pnpm test`, `pytest -q`, `cargo test`)
 - Lint runner: `<command>`
 - Typecheck runner: `<command>`
+- Test command (Worker post-edit): `<command>` (e.g., `npm test`, `pytest -q`, `go test ./...`). Empty = no per-edit test. Only fast unit tests (<30s). Integration tests remain at contract-check time.
 - Launch recipe (if user-facing): `<command>` + URL.
 
 ## Assertions

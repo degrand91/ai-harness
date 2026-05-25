@@ -65,6 +65,14 @@ The Worker returns when:
 - Spec is genuinely ambiguous → returns a spec-clarification handoff; or
 - Blocked on missing credentials/environment → returns a blocker handoff.
 
+## Post-edit test loop
+
+The contract preamble may include a `test_command` field for fast unit tests. When present:
+- Workers should run it after substantive file edits to catch regressions while context is hot (inspired by Aider's approach).
+- Scope: only fast unit tests (<30s). Integration and E2E tests remain at contract-check time.
+- Failure handling: attempt one fix after a failure, then document the outcome in the handoff under "Issues discovered."
+- This field is optional — harness-config missions and other non-code-test missions typically omit it.
+
 ## Anti-patterns
 
 - ❌ Returning prose instead of a structured handoff.

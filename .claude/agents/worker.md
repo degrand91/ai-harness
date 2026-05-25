@@ -100,6 +100,14 @@ If you hit a non-code blocker (missing creds, broken env):
 - bullet
 ```
 
+## Post-edit test loop
+
+If the contract preamble includes a `test_command`, run it after significant edits (not after every trivial line change):
+- Only applies to fast unit tests (<30s) — skip if the test suite is known to be slow.
+- If tests fail after an edit, attempt one fix before continuing.
+- If still failing after one fix attempt, note the failure in "Issues discovered" in the handoff and move on.
+- This is optional — many missions (especially harness config missions) won't have a `test_command`.
+
 ## Memory
 
 You have no persistent memory. You start fresh every time. This is the design — fresh context per feature is what makes the harness work over multi-day runs.
