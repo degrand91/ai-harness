@@ -70,6 +70,12 @@
     "verdict": "green",
     "path": "features/003-wire-login-button/scrutiny.md"
   },
+  "validator_quality": {
+    "tool_uses_count": 0,
+    "prose_preamble_detected": false,
+    "hallucination_detected": false,
+    "re_spawned": false
+  },
   "user_testing": {
     "started_at": null,
     "completed_at": null,
@@ -80,6 +86,19 @@
   "followups": []
 }
 ```
+
+### validator_quality block
+
+The `validator_quality` block is populated by the Orchestrator after each scrutiny pass. It is not written by the Validator itself.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tool_uses_count` | integer | Number of Bash tool invocations the scrutiny validator made. A value of 0 with non-empty assertion results indicates a suspected hallucination. |
+| `prose_preamble_detected` | boolean | `true` if the validator's reply contained text before the required `## Feature:` header, suggesting the response format was not followed. |
+| `hallucination_detected` | boolean | `true` if the Orchestrator determined the validator fabricated results (e.g. `tool_uses_count` is 0 but assertion verdicts were present) and triggered a re-spawn. |
+| `re_spawned` | boolean | `true` if the validator was re-spawned for any reason (hallucination, timeout, malformed output). |
+
+These metrics enable data-driven decisions about Haiku→Sonnet model routing for the scrutiny role (see ROADMAP v1.2). A pattern of `hallucination_detected: true` or high `re_spawned` rates on a given model signals that the model should be promoted.
 
 ### Notes
 

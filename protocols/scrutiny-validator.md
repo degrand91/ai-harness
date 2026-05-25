@@ -82,6 +82,21 @@ Every executable assertion in the contract slice must be run via the Bash tool. 
 
 **Anti-pattern reference:** See [`learnings/anti-patterns/haiku-scrutiny-hallucination.md`](../learnings/anti-patterns/haiku-scrutiny-hallucination.md) for a documented case of this failure mode, including how it manifested and how it was detected.
 
+## Quality telemetry
+
+After each scrutiny pass, the Orchestrator records validator quality metrics into the feature-level `status.json` under the `validator_quality` block. The Validator itself does not need to do anything — recording is entirely orchestrator-side.
+
+Metrics tracked:
+
+| Metric | What it measures |
+|--------|-----------------|
+| `tool_uses_count` | Number of Bash tool invocations the Validator made. Zero invocations with assertion verdicts present indicates fabricated results. |
+| `prose_preamble_detected` | Whether the Validator's reply contained free-form text before the required structured header. |
+| `hallucination_detected` | Whether the Orchestrator concluded the Validator fabricated results and triggered a re-spawn. |
+| `re_spawned` | Whether the Validator was re-spawned for any reason (hallucination, timeout, malformed output). |
+
+These metrics inform the Haiku→Sonnet routing decision described in ROADMAP v1.2. Persistent `hallucination_detected` or `re_spawned` signals on Haiku scrutiny runs are the primary trigger for escalating the default scrutiny model.
+
 ## Anti-patterns
 
 - ❌ Reading the Worker's handoff before deciding.
