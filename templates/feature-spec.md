@@ -19,6 +19,13 @@ Files / modules / surfaces this feature may touch:
 Out of scope for this feature (the Worker must not edit these, even if tempting):
 - `path/...`
 
+## Dependencies
+
+Features this feature depends on (must be completed before this one starts):
+- `F<NNN>` — reason (or "none" if this feature is independent)
+
+> Features with no dependencies on in-progress features may be executed in parallel via git worktrees. See `protocols/parallel-worktrees.md`.
+
 ## Contract slice
 
 This feature is responsible for satisfying these assertions from `contract.md`:

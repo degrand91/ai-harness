@@ -50,3 +50,17 @@ Tempting to spawn feature N+1 while validators are still running on N. Don't —
 - ❌ "I'll start feature N+1 while N validates, just to save time."
 - ❌ Spawning Worker subagents from different terminals against the same mission folder.
 - ❌ Letting Explorers edit code "because it would have been faster."
+
+## Dependency-parallel mode (opt-in)
+
+For missions with many independent features, the Orchestrator may run Workers in parallel via git worktrees. This mode requires:
+
+1. Every feature spec declares its `dependencies` field.
+2. The Orchestrator builds a DAG and identifies independent subgraphs.
+3. Independent features spawn Workers with `isolation: "worktree"` in the Agent tool.
+4. Validators still run serially per feature.
+5. Merge branches sequentially after validation.
+
+Full protocol: [protocols/parallel-worktrees.md](parallel-worktrees.md).
+
+This mode does NOT change the core rule: at any moment, no two Workers may edit the same file. Worktrees provide isolation, not permission to conflict.

@@ -169,6 +169,10 @@ Parallelism is allowed only for:
 
 If you find yourself wanting to run two Workers in parallel, you are wrong. Re-read this section.
 
+### Dependency-parallel mode (opt-in)
+
+For missions where features declare no dependencies on each other, Workers may run in parallel via git worktrees (`isolation: "worktree"` in the Agent tool). See [protocols/parallel-worktrees.md](protocols/parallel-worktrees.md). Validators still run serially. This does not change the core rule — it provides isolation, not permission to conflict.
+
 ---
 
 ## 7. Handoffs

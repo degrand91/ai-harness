@@ -30,6 +30,7 @@ These documents govern the sequencing and coordination rules for mission executi
 | [handoff.md](handoff.md) | Handoff format contract between Worker and Orchestrator; required sections and failure modes |
 | [validation-contract.md](validation-contract.md) | How to write a validation contract: executable assertions, contract slices, amendment rules |
 | [serial-execution.md](serial-execution.md) | Why features run one at a time and how the spawn-lock enforces it |
+| [parallel-worktrees.md](parallel-worktrees.md) | Opt-in protocol for running independent features concurrently via git worktrees |
 | [parallel-exploration.md](parallel-exploration.md) | When and how to fan out Explorer subagents in parallel during the planning phase |
 | [checkpoint-protocol.md](checkpoint-protocol.md) | Mid-mission checkpoints: when to surface state to the user and what to include |
 
