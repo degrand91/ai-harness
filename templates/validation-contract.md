@@ -133,6 +133,20 @@ Add behavioral, executable, negative, accessibility, and performance assertions 
 
 > CI assertions are optional. Only add them when the target project has GitHub Actions configured.
 
+### C-0XX — executable (integration)
+
+**Statement.** The mission-required image generation integration is available and functional.
+
+**Verification.** (Worker or Orchestrator)
+```
+1. Read integrations.json → confirm openai-image is enabled
+2. Verify: test -n "$OPENAI_API_KEY"
+3. Test call: curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models
+4. Expected: HTTP 200
+```
+
+> Integration assertions are optional. Only add them when the mission requires external services declared in `integrations.json`.
+
 ## Coverage check
 
 Before approval, confirm:

@@ -225,6 +225,7 @@ Three layers, all consulted at intake:
 - [.claude/agents/](.claude/agents/) — actual subagent definitions
 - [.claude/skills/](.claude/skills/) — actual slash-skill definitions
 - [.claude/settings.json](.claude/settings.json) — permissions, hooks, session-level agent
+- [integrations.json](integrations.json) — optional external service integrations (image generation, audio, etc.). Use `/integrations` to check availability. See [protocols/integrations.md](protocols/integrations.md).
 
 ---
 
