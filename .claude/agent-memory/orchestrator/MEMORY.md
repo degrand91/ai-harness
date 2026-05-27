@@ -1,4 +1,0 @@
-- [Settings deny rules — sanity-check at intake](feedback_settings_deny_rules.md) — overbroad `Edit(./<file>.md)` globs match every matching file under any subdirectory, can block mandatory mission artifacts; check `.claude/settings.json` at intake.
-- [Blanket approval — chain-of-missions](feedback_blanket_approval.md) — user grants pre-approval for chained missions via "continue until vX" / "do not stop"; honor it across mission boundaries, still write artifacts, still escalate on genuine blockers.
-- [Project chain state — v0.3..v1.0 marathon](project_chain_state.md) — chain currently at v0.4 closed; v0.5 next; blanket approval active. Read at session start if user references the roadmap.
-- [WHAT vs HOW boundary](feedback_what_vs_how_boundary.md) — user owns WHAT; orchestrator owns HOW including context, sessions, infrastructure. Never ask the user to switch sessions or take infra action to resolve a HOW problem.

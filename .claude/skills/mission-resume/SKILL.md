@@ -2,7 +2,7 @@
 name: mission-resume
 description: Pick up an in-flight mission across sessions. Reads checkpoint.json (fast-start summary), status.json (authoritative state), and MEMORY.md (chain context) to produce a structured resume briefing the Orchestrator can act on immediately. Use this at the start of any session where you intend to continue an existing mission.
 argument-hint: [mission-id]
-allowed-tools: Read, Bash(ls *), Bash(cat *), Bash(/Users/stefanodegrandis/projects/ai/harness/scripts/status.sh *), Grep, Glob
+allowed-tools: Read, Bash(ls *), Bash(cat *), Bash(./scripts/status.sh *), Grep, Glob
 ---
 
 ## Available missions

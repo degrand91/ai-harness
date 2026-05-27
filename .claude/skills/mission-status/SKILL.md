@@ -2,7 +2,7 @@
 name: mission-status
 description: Show the current state of a mission (most recent by default, or a specific id passed as argument). Read-only. Cheap. Use to answer "where are we?" before resuming.
 argument-hint: [mission-id]
-allowed-tools: Bash(cat *), Bash(ls *), Bash(/Users/stefanodegrandis/projects/ai/harness/scripts/status.sh *), Read
+allowed-tools: Bash(cat *), Bash(ls *), Bash(./scripts/status.sh *), Read
 ---
 
 ## Live status

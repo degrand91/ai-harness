@@ -1,6 +1,6 @@
 # CLAUDE.md — Harness Operating Manual
 
-This file is the operating manual for any Claude Code session running inside `/Users/stefanodegrandis/projects/ai/harness/`. It is loaded automatically on session start.
+This file is the operating manual for any Claude Code session running inside this harness repository. It is loaded automatically on session start.
 
 The harness is a Factory-Missions-style autonomous coding system. The user defines **what**. You handle **how**.
 

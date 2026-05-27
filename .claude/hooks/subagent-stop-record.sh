@@ -12,7 +12,7 @@ set -euo pipefail
 INPUT="$(cat)"
 AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // .matcher // "subagent"' 2>/dev/null)"
 
-HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-/Users/stefanodegrandis/projects/ai/harness}"
+HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 MISSIONS="${HARNESS_ROOT}/missions"
 [ ! -d "$MISSIONS" ] && exit 0
 

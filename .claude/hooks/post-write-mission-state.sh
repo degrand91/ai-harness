@@ -15,15 +15,15 @@ FILE_PATH="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')"
 
 # Only react inside the harness's missions/ tree.
 case "$FILE_PATH" in
-  *"/harness/missions/"*) ;;
+  */missions/*) ;;
   *) exit 0 ;;
 esac
 
 # Derive mission id (first segment after /missions/).
-MISSION_ID="$(printf '%s' "$FILE_PATH" | sed -E 's@.*/harness/missions/([^/]+)/.*@\1@')"
+MISSION_ID="$(printf '%s' "$FILE_PATH" | sed -E 's@.*/missions/([^/]+)/.*@\1@')"
 [ -z "$MISSION_ID" ] && exit 0
 
-HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-/Users/stefanodegrandis/projects/ai/harness}"
+HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 LOG_FILE="${HARNESS_ROOT}/missions/${MISSION_ID}/log.md"
 
 # Don't recursively log log.md edits.
