@@ -38,6 +38,8 @@ In order:
   - Sized so a single Worker subagent can complete one in its context budget.
 - Number features `001`, `002`, … with kebab-case slugs.
 - Each feature's `spec.md` cites which contract assertions it satisfies.
+- If a decision is genuinely ambiguous (e.g., two valid tech approaches, unclear scope boundary, conflicting user signals), draft the plan with your best assumption and mark the uncertainty. Present the question at the approval gate alongside the plan — the user's answer may change the plan before execution begins.
+- Do not ask speculative questions ("should I also add X?"). Only surface questions where the answer would change which features exist or how they're ordered.
 
 ### Contract
 - See [validation-contract.md](validation-contract.md).

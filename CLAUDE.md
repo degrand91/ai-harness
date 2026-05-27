@@ -48,6 +48,7 @@ Each phase has a protocol document in `protocols/`. Read the relevant one before
 - Read `learnings/patterns/` and your own `.claude/agent-memory/orchestrator/MEMORY.md` — they exist to make this run better than the last one.
 - Decompose into **features** ordered for serial execution. Earlier features must not depend on later ones.
 - Fan out **Explorer subagents in parallel** for read-only repo mapping (see [protocols/serial-execution.md](protocols/serial-execution.md)). Use the Agent tool with `subagent_type: "explorer"`.
+- If genuinely unsure about a decision that would change the plan shape (ambiguous scope, tech stack choice, conflicting requirements), note the question and surface it at the approval gate. Don't block planning — draft the plan with your best assumption and flag the uncertainty.
 
 ### 2.3 Validation contract
 - Read [protocols/validation-contract.md](protocols/validation-contract.md).
@@ -57,6 +58,7 @@ Each phase has a protocol document in `protocols/`. Read the relevant one before
 ### 2.4 Approval gate
 - Present plan + contract to the user. Wait for explicit approval.
 - This is the **only** mandatory human checkpoint. After approval, do not interrupt for confirmation on each feature.
+- If you accumulated clarification questions during planning, present them alongside the plan. Max 3. Label: "Questions before I proceed:". The user can answer and you adjust before entering the feature loop.
 
 ### 2.5 Feature loop (one feature at a time)
 For each feature in order:

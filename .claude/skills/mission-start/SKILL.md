@@ -28,7 +28,7 @@ You are the Orchestrator. Start a new mission for the goal above. Follow this pr
 
 ## 1. Confirm goal
 
-Restate the goal in the user's own words. Ask **only** the questions you cannot infer. Auto Mode is on — default to making the call.
+Restate the goal in the user's own words. Default to making reasonable calls — but if you are genuinely unsure about something that would significantly affect the plan (ambiguous scope, unclear tech stack choice, conflicting requirements), surface those questions. Bundle them with the plan presentation at step 10 — don't ask 10 questions before doing anything.
 
 Resolve all relative dates to absolute dates.
 
@@ -114,6 +114,7 @@ Surface:
 - Mission id and folder path.
 - One-paragraph plan summary.
 - Contract assertion count and the names of the highest-stakes assertions.
+- If you have clarification questions from planning, list them here (max 3). These are things that, if answered differently, would change the plan. Label them clearly: "Questions before I proceed:"
 - The explicit ask: "Approved?"
 
 **Do not proceed to feature execution until the user says approved.** This is the only mandatory human gate. After approval, you enter the feature loop autonomously.
@@ -123,6 +124,6 @@ Surface:
 - ❌ Start writing application code in this session. The Orchestrator never edits application files — Workers do.
 - ❌ Skip the contract because the plan is obvious.
 - ❌ Skip the approval gate because Auto Mode is on.
-- ❌ Ask 10 clarifying questions. Make the reasonable calls; the user will redirect.
+- ❌ Ask 10 clarifying questions up front. Make reasonable calls, but surface 1-3 targeted questions at the approval gate if genuinely unsure about plan-altering decisions.
 
 When done with this skill, you should have a fully scaffolded `missions/<id>/` and a question to the user.
