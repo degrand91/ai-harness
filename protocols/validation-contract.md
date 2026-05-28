@@ -83,3 +83,26 @@ Allowed, with discipline:
 - ❌ Editing the contract to make a feature green.
 - ❌ Writing the contract after the plan is "halfway done."
 - ❌ Letting a Worker write its own contract slice.
+- ❌ Grep-only assertions for behavioral verification — they prove a string exists, not that the code works.
+- ❌ Missing `test_command` for missions that touch application code.
+
+## Behavioral assertions are the bar
+
+The validation contract exists to verify behavior, not text. Assertions that grep for a string prove only that a string exists. They produce false greens — the validator passes, the feature is "done," and the actual behavior is wrong.
+
+### The rule
+
+Every mission that touches runtime code must have at least one assertion that:
+1. Exercises the changed behavior end-to-end (call the API, render the component, run the function)
+2. Captures an observable outcome (response body, exit code, side effect)
+3. Fails loudly if the outcome is wrong
+
+Grep is fine for structural checks (file exists, doc mentions topic, settings has flag). Grep is not enough for "the code works."
+
+### When the worker can't pass behavioral assertions
+
+If the assertion requires running the app and the worker can't run the app (no test environment, missing deps), the worker reports BLOCKED in the handoff rather than passing the assertion. The orchestrator either provisions the environment or opens a setup feature first.
+
+### `test_command` is required for code missions
+
+The contract preamble's `test_command` field is required when the mission touches application code. Workers run it after substantive edits — catching regressions while context is hot is dramatically cheaper than catching them at the validator pass. The only acceptable "no test_command" cases are pure documentation, configuration, or template missions.

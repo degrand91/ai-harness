@@ -13,8 +13,64 @@
 - Test runner: `<command>` (e.g., `pnpm test`, `pytest -q`, `cargo test`)
 - Lint runner: `<command>`
 - Typecheck runner: `<command>`
-- Test command (Worker post-edit): `<command>` (e.g., `npm test`, `pytest -q`, `go test ./...`). Empty = no per-edit test. Only fast unit tests (<30s). Integration tests remain at contract-check time.
+- Test command (Worker post-edit) — **REQUIRED for any mission touching application code**: `<command>` (e.g., `npm test`, `pytest -q`, `go test ./...`)
+  - Workers run this after substantive edits to catch regressions while context is hot.
+  - **Optional for harness-config / docs-only missions** (set to `n/a` and note the reason).
+  - Only fast unit tests (<30s). Integration tests remain at contract-check time.
 - Launch recipe (if user-facing): `<command>` + URL.
+
+## Assertion discipline
+
+The contract is the only definition of "done." Its assertions must verify **behavior**, not text patterns.
+
+### Behavioral over grep
+
+**Grep-based assertions are placeholder-grade.** They prove a string exists in a file. They do NOT prove the code works. Use them only for documentation/structural checks (e.g., "the agent definition mentions this tool name") — never for behavioral verification.
+
+❌ **Weak (grep-only):**
+```bash
+grep -q 'browser_fill' .claude/agents/user-testing-validator.md
+# proves: the string "browser_fill" appears in the file
+# does NOT prove: the agent actually calls browser_fill correctly
+```
+
+✅ **Strong (behavioral):**
+```bash
+# Boot the app, exercise the flow, verify observable outcome
+./scripts/launch.sh &
+sleep 3
+curl -fsS -X POST http://localhost:3000/contact \
+  -d 'name=Test&email=test@example.com&message=hello' \
+  | grep -q '"success":true'
+# proves: the endpoint accepts the form and responds correctly
+```
+
+### What counts as a behavioral assertion
+
+A behavioral assertion does at least one of these:
+- Runs a command and checks its exit code (`exit 0`)
+- Captures stdout/stderr and verifies its content
+- Hits an HTTP endpoint and verifies the response code or body
+- Reads the side effect (a file created, a DB row inserted, a process started)
+- Compares observable state before and after the change
+
+### When grep IS appropriate
+
+Grep is fine for:
+- **Structural assertions**: file exists, file has minimum line count
+- **Documentation assertions**: a referenced concept is documented
+- **Configuration presence**: a feature flag is wired into settings
+- **Negative checks**: no hardcoded secret pattern appears
+
+Grep is NOT appropriate for:
+- "The function returns the right value" — run the function
+- "The component renders correctly" — render it and snapshot it
+- "The API call succeeds" — make the call
+- "The agent uses the tool" — observe the agent using the tool, or test the tool's effect
+
+### Mix is required
+
+Every mission's contract MUST contain at least one truly behavioral assertion if the mission touches code that runs. Pure-grep contracts are accepted only for documentation/template missions where there is no runtime to exercise.
 
 ## Assertions
 
@@ -91,6 +147,7 @@ Add behavioral, executable, negative, accessibility, and performance assertions 
 - Have a stable ID.
 - Be independently verifiable.
 - Be unambiguous to a reader who has never seen the code.
+- **Verify behavior, not text patterns** (see "Assertion discipline" above).
 
 ### Browser-specific assertion examples (for web UI missions)
 
@@ -157,6 +214,8 @@ Before approval, confirm:
 - [ ] At least one **structural** assertion (file size, dep budget, etc.).
 - [ ] At least one **behavioral** assertion per user-observable flow.
 - [ ] Test runner and lint runner are named commands, not "all tests pass."
+- [ ] At least one **behavioral** assertion (runs code, verifies observable outcome) — not just grep.
+- [ ] `test_command` is required for code missions — set to a real command OR explicitly marked `n/a` with a reason.
 
 ## Amendments log
 
