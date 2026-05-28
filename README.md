@@ -75,6 +75,18 @@ The only shell script is `status.sh` — it lets you check mission state without
 6. **Use the platform.** Subagents, skills, hooks, and agent memory are all native Claude Code surfaces — the harness binds them together rather than reinventing them.
 7. **The harness improves itself.** Every mission ends with a post-mortem; patterns get distilled into `learnings/` and into the orchestrator's `.claude/agent-memory/`.
 
+## Contributing and License
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR —
+in particular the dog-food rule (harness changes go through a mission) and the contract
+discipline requirements.
+
+This project is released under the [MIT License](LICENSE).
+
+Community standards are governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+To report a security vulnerability, see [SECURITY.md](SECURITY.md).
+
 ## Credits
 
 Built on insights from ECC ([affaan-m/ECC](https://github.com/affaan-m/ECC), MIT). See [docs/credits.md](docs/credits.md).
