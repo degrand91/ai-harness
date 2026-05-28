@@ -62,6 +62,7 @@ For each feature in order:
    - The previous feature's handoff (if any).
 4. Receive the Worker's return value. Persist it at `features/NNN/handoff.md`. Validate it has all required sections (see [handoff.md](handoff.md)). If not, re-spawn.
 5. Spawn a Scrutiny Validator subagent via the Agent tool with `subagent_type: "scrutiny-validator"` ([.claude/agents/scrutiny-validator.md](../.claude/agents/scrutiny-validator.md)). It only sees the contract slice + the diff.
+   - **Scrutiny model routing**: default to Sonnet for the scrutiny-validator spawn. Use Haiku only if every assertion in the contract slice is purely mechanical (shell exit codes, fixed grep). See [protocols/model-routing.md](model-routing.md#scrutiny-model-selection).
 6. If the feature has user-observable behavior, spawn a User-Testing Validator.
 7. Decide:
    - All verdicts green → mark feature done, update `status.json`, advance.

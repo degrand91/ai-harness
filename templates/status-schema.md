@@ -100,6 +100,11 @@ The `validator_quality` block is populated by the Orchestrator after each scruti
 
 These metrics enable data-driven decisions about Haiku→Sonnet model routing for the scrutiny role (see ROADMAP v1.2). A pattern of `hallucination_detected: true` or high `re_spawned` rates on a given model signals that the model should be promoted.
 
+### models block field notes
+
+- `scrutiny_validator_default`: default scrutiny model for the mission. **Sonnet by default**; set to `"haiku"` only for missions where every assertion is purely mechanical. See [protocols/model-routing.md](../protocols/model-routing.md#scrutiny-model-selection).
+- The orchestrator may override this per-feature if a feature's contract slice is mechanical even when the mission default is sonnet.
+
 ### Notes
 
 - Timestamps are ISO-8601 UTC.
