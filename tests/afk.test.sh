@@ -105,6 +105,39 @@ out="$(CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/watch.sh" --once 2>/dev
 assert_rc 2 "$rc"
 assert_contains "$out" "crew T1"
 
+it "an expired away mode hands the watcher back, rather than leaving nobody"
+# Found by running away mode to expiry: the daemon stops at its deadline but
+# the marker survives until the operator runs `return`. Standing the watcher
+# down on the bare marker left NOTHING supervising the fleet in between --
+# the exact failure away mode exists to prevent.
+# See docs/verification/away-mode-drill.md.
+. "$HARNESS_ROOT/scripts/lib/afk-state.sh"
+exp="$(mktmphome)"
+printf '{"entered_at":"2026-09-09T00:00:00Z","until_epoch":%s}\n' "$(( $(date -u +%s) - 60 ))" > "$exp/state/.afk"
+afk_on "$exp";       assert_rc 0 $?
+afk_expired "$exp";  assert_rc 0 $?
+afk_in_force "$exp"; assert_rc 1 $?
+
+it "and away mode still in force keeps standing the watcher down"
+liv="$(mktmphome)"
+printf '{"entered_at":"2026-09-09T00:00:00Z","until_epoch":%s}\n' "$(( $(date -u +%s) + 3600 ))" > "$liv/state/.afk"
+afk_in_force "$liv"; assert_rc 0 $?
+
+it "an unreadable marker counts as expired, so something is always supervising"
+# Of the two ways to be wrong, waking the operator needlessly can be noticed.
+# Silence cannot.
+bad="$(mktmphome)"; printf 'not json\n' > "$bad/state/.afk"
+afk_in_force "$bad"; assert_rc 1 $?
+
+it "status says EXPIRED rather than reporting away mode as simply on"
+out="$(CLAUDE_PROJECT_DIR="$exp" "$HARNESS_ROOT/scripts/afk.sh" status 2>&1)"
+assert_contains "$out" "EXPIRED"
+assert_contains "$out" "watcher has taken over"
+
+it "the watcher stands down only while away mode is in force"
+assert_contains "$(cat "$HARNESS_ROOT/scripts/watch.sh")" 'afk_in_force "$HARNESS_ROOT"'
+assert_contains "$(cat "$HARNESS_ROOT/.claude/hooks/stop-watch-rearm.sh")" 'afk_in_force "$HARNESS_ROOT"'
+
 it "the daemon refuses to run when away mode is off"
 afk daemon
 assert_rc 1 "$HOOK_RC"

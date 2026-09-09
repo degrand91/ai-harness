@@ -135,7 +135,7 @@ No framework: `bash`, `jq` and coreutils are all the harness itself requires, so
 
 Phases 0–5 complete. The crew path has been run end to end against a real model, through both the tmux backend and directly; `docs/verification/crew-spike.md` records which Claude Code behaviours it depends on and how they were checked.
 
-Known gaps: away mode has not been run over a full unattended stretch, and concurrency above 1 is deliberately unimplemented.
+Known gap: concurrency above 1 is deliberately unimplemented. Away mode's daemon, escalation ladder and wedge alarm have been run unattended to expiry on a compressed clock (`docs/verification/away-mode-drill.md`), not yet over a real overnight stretch.
 
 ## Contributing and License
 

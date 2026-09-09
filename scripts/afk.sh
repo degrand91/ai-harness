@@ -38,6 +38,8 @@ ESC="$STATE/afk-escalations"
 . "$CODE_ROOT/scripts/lib/status-read.sh"
 # shellcheck source=lib/crew.sh
 . "$CODE_ROOT/scripts/lib/crew.sh"
+# shellcheck source=lib/afk-state.sh
+. "$CODE_ROOT/scripts/lib/afk-state.sh"
 # shellcheck source=lib/holds.sh
 . "$CODE_ROOT/scripts/lib/holds.sh"
 
@@ -144,7 +146,15 @@ case "${1:-}" in
     ;;
   status)
     if [ ! -f "$AFK" ]; then printf 'Away mode is off.\n'; exit 0; fi
-    printf 'Away mode on since %s.\n' "$(jq -r '.entered_at' "$AFK" 2>/dev/null || echo '?')"
+    if afk_expired "$HARNESS_ROOT"; then
+      # Saying "on" here would be a lie with consequences: the daemon has
+      # stopped ticking, so nothing is escalating any more.
+      printf 'Away mode EXPIRED (started %s). The daemon has stopped and the watcher has taken over.\n' \
+        "$(jq -r '.entered_at' "$AFK" 2>/dev/null || echo '?')"
+      printf 'Run ./scripts/afk.sh return to collect the digest and clear it.\n'
+    else
+      printf 'Away mode on since %s.\n' "$(jq -r '.entered_at' "$AFK" 2>/dev/null || echo '?')"
+    fi
     n=0; [ -d "$ESC" ] && for f in "$ESC"/*.json; do [ -f "$f" ] && jq -e '.acked_at == null' "$f" >/dev/null 2>&1 && n=$((n+1)); done
     printf 'Unacknowledged escalations: %s\n' "$n"
     ;;
