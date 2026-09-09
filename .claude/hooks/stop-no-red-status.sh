@@ -42,6 +42,8 @@ STUCK_SECONDS="${HARNESS_STUCK_SECONDS:-3600}"
 cat > /dev/null   # drain stdin; we decide from state, not from the payload
 
 # shellcheck source=../../scripts/lib/status-read.sh
+# shellcheck source=../../scripts/lib/holds.sh
+. "$CODE_ROOT/scripts/lib/holds.sh" 2>/dev/null || true
 if ! . "$CODE_ROOT/scripts/lib/status-read.sh" 2>/dev/null; then
   echo "[Stop hook] scripts/lib/status-read.sh is missing or unreadable — cannot verify mission state. Repair the checkout." >&2
   exit 2
@@ -66,8 +68,18 @@ for mission_dir in "$MISSIONS"/*/; do
     continue
   fi
 
+  # `awaiting_approval` means a question was put to the captain. If no decision
+  # is filed for it, the question exists only in a chat turn — and a restart or
+  # a compaction erases it. Refuse the stop rather than let it evaporate.
+  if [ "$state" = "awaiting_approval" ]; then
+    if [ "$(holds_count_open "$mission_dir")" -eq 0 ] 2>/dev/null; then
+      PROBLEMS+=("Mission ${id}: state is awaiting_approval but no decision is filed. File it (./scripts/hold.sh open ${id} --question \"...\") so it survives a restart, or change the mission state.")
+    fi
+    continue
+  fi
+
   case "$state" in
-    closed|abandoned|paused|awaiting_approval|intake) continue ;;
+    closed|abandoned|paused|intake) continue ;;
   esac
 
   reds="$(jq -r '

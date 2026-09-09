@@ -82,7 +82,7 @@ for id in "${ACTIVE[@]}"; do
   CONTEXT="${CONTEXT}"$'\n'
 done
 
-# Undrained inbox notes come FIRST in the operator's attention, because they are
+# Undrained inbox notes sit above mission state but below open decisions, because they are
 # things the captain asked for that nothing has acted on yet.
 INBOX_DIR="${HARNESS_ROOT}/data/inbox"
 if [ -d "$INBOX_DIR" ]; then
@@ -97,6 +97,21 @@ if [ -d "$INBOX_DIR" ]; then
   if [ -n "$NOTES" ]; then
     CONTEXT="Undrained inbox notes (captured while you were busy; present them, then \`./scripts/inbox.sh drain --ack <id>\`):${NOTES}"$'\n\n'"${CONTEXT}"
   fi
+fi
+
+# OPEN DECISIONS COME FIRST, ahead of everything. Each block below PREPENDS
+# to CONTEXT, so this one runs LAST to end up on top. They are questions the captain
+# has already been asked and has not answered; presenting work before them is how
+# a session ends up doing something the captain was about to redirect.
+HOLDS_TEXT=""
+if [ -d "$MISSIONS" ] && . "$CODE_ROOT/scripts/lib/holds.sh" 2>/dev/null; then
+  while IFS=$'\t' read -r hm hid hblock hq; do
+    [ -n "$hm" ] || continue
+    HOLDS_TEXT="${HOLDS_TEXT}"$'\n'"  ${hid} on ${hm} [${hblock}]"$'\n'"      ${hq}"
+  done < <(holds_list_all "$MISSIONS" 2>/dev/null)
+fi
+if [ -n "$HOLDS_TEXT" ]; then
+  CONTEXT="OPEN DECISIONS awaiting the captain — present these before starting or resuming work.${HOLDS_TEXT}"$'\n\n'"Answer with: ./scripts/hold.sh answer <mission> <id> \"<answer>\", or use /decide."$'\n\n'"${CONTEXT}"
 fi
 
 CONTEXT="${CONTEXT}"$'\n'"Use /fleet for everything in flight, /mission-status to inspect, /mission-resume to continue."

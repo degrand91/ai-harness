@@ -40,6 +40,8 @@ SCHEMA=1
 . "$CODE_ROOT/scripts/lib/status-read.sh"
 # shellcheck source=lib/registry.sh
 . "$CODE_ROOT/scripts/lib/registry.sh"
+# shellcheck source=lib/holds.sh
+. "$CODE_ROOT/scripts/lib/holds.sh"
 
 PRETTY=0
 case "${1:-}" in
@@ -178,13 +180,9 @@ while [ "$declare_i" -lt "${#IDS[@]}" ]; do
     done
   fi
 
-  holds=0
-  if [ -d "$MISSIONS/$id/decisions" ]; then
-    for hf in "$MISSIONS/$id/decisions"/*.json; do
-      [ -f "$hf" ] || continue
-      holds=$((holds + 1))
-    done
-  fi
+  # Answered holds move to decisions/answered/, so counting open ones is a file
+  # count and costs no jq — see scripts/lib/holds.sh.
+  holds="$(holds_count_open "$MISSIONS/$id")"
 
   [ -n "$SIDECAR" ] && SIDECAR="${SIDECAR},"
   SIDECAR="${SIDECAR}{\"id\":\"${id}\",\"state\":\"${state}\",\"active\":${active},\"last_activity\":${act},\"project\":${project},\"open_holds\":${holds}}"
