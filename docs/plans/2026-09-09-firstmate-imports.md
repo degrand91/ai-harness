@@ -257,13 +257,16 @@ independently. Six chances to drift, and §0.1 proves drift already happened.
   suite asserts the timing on a 40-mission fixture. Closed and abandoned missions are skipped on a cheap `jq -r` of one
   field before anything else is read; the test suite asserts the timing on a
   40-mission fixture.
-- Existing renderers migrate to consume the snapshot. **Done so far:**
-  `status.sh` and `harness-audit.sh` read through `scripts/lib/status-read.sh`,
-  and `fleet.sh` is snapshot-only by construction (its test asserts the source
-  mentions no mission file). **Still outstanding:** `mission-tui.sh`,
-  `mission-html-report.sh`, `mission-diff.sh` and `mission-checkpoint.sh` (734
-  lines, 27 jq sites) still parse `status.json` directly and will misreport a
-  drifted mission. They are a follow-up within Phase 1, not a Phase 2 blocker.
+- Renderer migration: **done.** `fleet.sh` is snapshot-only by construction (its
+  test asserts the source mentions no mission file). The seven per-mission
+  renderers — `status.sh`, `harness-audit.sh`, `mission-tui.sh`,
+  `mission-diff.sh`, `mission-checkpoint.sh`, `mission-html-report.sh` — read
+  mission files directly **by design**, because they render per-feature and
+  plan-vs-actual detail the fleet snapshot deliberately does not carry. What
+  none of them may do any more is *decide mission state*: every one resolves it
+  through `status_state`, and `tests/script-renderers.test.sh` fails the build
+  if a top-level `.state` read reappears. `.features[].state` stays a direct
+  read — it is an ordinary field, not the thing status-read owns.
 - `.claude/skills/fleet/SKILL.md` (new) — `/fleet`, the "where is everything"
   answer across all projects.
 

@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Code comes from BASH_SOURCE, missions from CLAUDE_PROJECT_DIR (or the cwd when
+# it looks like a harness home). Resolving both from the script's own location
+# made this unusable against any home but its own checkout.
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then HARNESS_ROOT="$CLAUDE_PROJECT_DIR"
+elif [ -d "${PWD}/missions" ];  then HARNESS_ROOT="$PWD"
+else                                 HARNESS_ROOT="$CODE_ROOT"; fi
+
+# shellcheck source=lib/status-read.sh
+. "${CODE_ROOT}/scripts/lib/status-read.sh"
+REPO_ROOT="$HARNESS_ROOT"
 
 usage() {
   echo "Usage: $(basename "$0") <mission-id> [--open]" >&2
@@ -45,7 +55,8 @@ jq_field() {
 
 STATUS_FILE="$MISSION_DIR/status.json"
 
-MISSION_STATE=$(jq_field "$STATUS_FILE" '.state' 'unknown')
+MISSION_STATE=$(status_state "$STATUS_FILE" 2>/dev/null || true)
+[ -n "$MISSION_STATE" ] || MISSION_STATE="unknown"
 CURRENT_FEATURE=$(jq_field "$STATUS_FILE" '.current_feature' '-')
 CHAIN_TARGET=$(jq_field "$STATUS_FILE" '.chain_target' '-')
 
@@ -59,7 +70,9 @@ POST_MORTEM_MD=""
 
 features_rows() {
   local features_dir="$MISSION_DIR/features"
-  [ -d "$features_dir" ] || return
+  # `return` with no code inherits the failed test's status, which under
+  # `set -e` aborted the entire report for any mission with no features/ yet.
+  [ -d "$features_dir" ] || return 0
   for feat_dir in "$features_dir"/*/; do
     [ -d "$feat_dir" ] || continue
     local slug; slug=$(basename "$feat_dir")
@@ -94,7 +107,9 @@ features_rows() {
 
 validators_rows() {
   local features_dir="$MISSION_DIR/features"
-  [ -d "$features_dir" ] || return
+  # `return` with no code inherits the failed test's status, which under
+  # `set -e` aborted the entire report for any mission with no features/ yet.
+  [ -d "$features_dir" ] || return 0
   for feat_dir in "$features_dir"/*/; do
     [ -d "$feat_dir" ] || continue
     local slug; slug=$(basename "$feat_dir")
