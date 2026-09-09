@@ -17,6 +17,10 @@
 # HARNESS_NOTIFY_DRYRUN=1 prints what would be sent and sends nothing.
 
 set -uo pipefail
+case "${1:-}" in
+  -h|--help) sed -n '2,20{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+esac
+
 TITLE="${1:-Harness}"; MSG="${2:-}"; LEVEL="normal"
 [ "${3:-}" = "--level" ] && LEVEL="${4:-normal}"
 [ -n "$MSG" ] || { printf 'usage: notify.sh <title> <message> [--level normal|urgent]\n' >&2; exit 2; }

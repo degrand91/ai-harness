@@ -32,6 +32,10 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
 
 die() { printf '%s\n' "$1" >&2; exit "${2:-2}"; }
 
+case "${1:-}" in
+  -h|--help) sed -n '2,24{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+esac
+
 TASK="${1:-}"; ABANDON=0
 [ "${2:-}" = "--abandon" ] && ABANDON=1
 [ -n "$TASK" ] || die "usage: teardown.sh <task> [--abandon]"

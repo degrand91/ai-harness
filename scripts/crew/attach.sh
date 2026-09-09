@@ -18,6 +18,10 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
 # shellcheck source=../lib/crew.sh
 . "$CODE_ROOT/scripts/lib/crew.sh"
 
+case "${1:-}" in
+  -h|--help) sed -n '2,16{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+esac
+
 TASK="${1:-}"
 [ -n "$TASK" ] || { printf 'usage: attach.sh <task>\n' >&2; exit 2; }
 crew_meta_get "$HARNESS_ROOT" "$TASK" task >/dev/null 2>&1 \
