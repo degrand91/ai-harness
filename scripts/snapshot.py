@@ -13,7 +13,7 @@ Six renderers used to parse status.json independently, which is how schema
 drift went unnoticed in all six at once. Everything consumes this document now;
 scripts/fleet.sh proves the pattern by parsing nothing itself.
 
-Schema: {schema, generated_at, projects[], missions[], totals{}}
+Schema: {schema, generated_at, projects[], missions[], crew[], totals{}}
 `schema` is an integer; bump it on any breaking change to this shape.
 """
 from __future__ import annotations
@@ -34,6 +34,7 @@ def build(root: Path) -> dict:
     missions_dir = root / "missions"
     projects = harness.parse_registry(root / "data" / "projects.md")
     by_path = {p["path"]: p["name"] for p in projects}
+    crew = harness.crew_tasks(root)
 
     missions = []
     for mdir in harness.missions_by_recency(missions_dir):
@@ -99,6 +100,7 @@ def build(root: Path) -> dict:
             for p in projects
         ],
         "missions": missions,
+        "crew": crew,
         "totals": {
             "missions": len(missions),
             "active_missions": sum(1 for m in missions if m["active"]),
@@ -109,6 +111,10 @@ def build(root: Path) -> dict:
                 "output": sum(m["tokens"]["output"] for m in missions),
             },
             "cost_usd": sum(m["cost_usd"] for m in missions),
+            "crew": {
+                "live": sum(1 for c in crew if c["alive"]),
+                "total": len(crew),
+            },
         },
     }
 
