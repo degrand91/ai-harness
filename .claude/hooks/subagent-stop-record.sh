@@ -16,7 +16,13 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 MISSIONS="${HARNESS_ROOT}/missions"
 [ ! -d "$MISSIONS" ] && exit 0
 
-LATEST="$(ls -t "$MISSIONS" 2>/dev/null | grep -v '^\.gitkeep$' | head -n1 || true)"
+# shellcheck disable=SC2012  # mtime ordering; mission ids are date-slugs
+LISTING="$(ls -t "$MISSIONS" 2>/dev/null || true)"
+LATEST=""
+while IFS= read -r _d; do
+  case "$_d" in ''|.*) continue ;; esac
+  LATEST="$_d"; break
+done <<< "$LISTING"
 [ -z "$LATEST" ] && exit 0
 
 LOG="$MISSIONS/$LATEST/log.md"

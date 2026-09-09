@@ -18,3 +18,11 @@
 .claude/agent-memory/
 .claude/hooks/agent-spawn-state.json
 missions/
+
+# Local operational state (see docs/plans — "Layout and state")
+#   data/   project registry, inbox, crew worktrees
+#   state/  session lock, task meta and ledgers, epochs
+#   config/ operator choices (budgets, thresholds)
+data/
+state/
+config/

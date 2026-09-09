@@ -7,10 +7,12 @@
 #
 # Always exits 0 (non-blocking).
 
-set -euo pipefail
+# NOT `set -e`: releasing a lock is best-effort cleanup. A crash here would
+# strand the serial slot until the 600s staleness window expires.
+set -uo pipefail
 
-INPUT="$(cat)"
-AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null)"
+INPUT="$(cat 2>/dev/null || true)"
+AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null || true)"
 
 STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/agent-spawn-state.json"
 
@@ -19,8 +21,10 @@ if [ ! -f "$STATE_FILE" ]; then
   exit 0
 fi
 
-IN_FLIGHT="$(jq -r '.in_flight_non_explorer' "$STATE_FILE")"
-EXPLORER_COUNT="$(jq -r '.explorer_count' "$STATE_FILE")"
+IN_FLIGHT="$(jq -r '.in_flight_non_explorer // false' "$STATE_FILE" 2>/dev/null || echo false)"
+EXPLORER_COUNT="$(jq -r '.explorer_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
+case "$IN_FLIGHT" in true|false) ;; *) IN_FLIGHT=false ;; esac
+case "$EXPLORER_COUNT" in ''|*[!0-9]*) EXPLORER_COUNT=0 ;; esac
 
 # ---------------------------------------------------------------------------
 # Helper: write state atomically via temp file + mv

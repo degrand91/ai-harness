@@ -7,10 +7,13 @@
 #
 # Input: JSON on stdin with .tool_input.file_path.
 
-set -euo pipefail
+# NOT `set -e`: this hook runs after every Write/Edit, and a malformed payload
+# (or any jq hiccup) must never surface as a failing hook. Logging is
+# best-effort; the tool call it observes has already happened.
+set -uo pipefail
 
-INPUT="$(cat)"
-FILE_PATH="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty')"
+INPUT="$(cat 2>/dev/null || true)"
+FILE_PATH="$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)"
 [ -z "$FILE_PATH" ] && exit 0
 
 # Only react inside the harness's missions/ tree.

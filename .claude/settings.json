@@ -52,7 +52,11 @@
       "Skill(scaffold-feature)",
       "Skill(contract-check)",
       "Skill(log)",
-      "Skill(integrations)"
+      "Skill(integrations)",
+      "Bash(./tests/run.sh *)",
+      "Bash(./scripts/doctor.sh *)",
+      "Bash(./scripts/lint.sh *)",
+      "Bash(./scripts/lib/status-read.sh *)"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -100,6 +104,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start-lock.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start-inject-status.sh",
             "timeout": 10
           }
@@ -127,6 +140,16 @@
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-tool-observer-guard.sh",
+            "timeout": 10
+          }
+        ]
+      },
       {
         "matcher": "Agent",
         "hooks": [
@@ -156,6 +179,17 @@
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-tool-use-failure.sh",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-end-release-lock.sh",
+            "timeout": 10
           }
         ]
       }

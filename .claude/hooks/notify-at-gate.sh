@@ -54,6 +54,15 @@ TITLE="$(printf '%s' "$INPUT" | jq -r '.title // "Harness"' 2>/dev/null || echo 
 SAFE_MSG="$(printf '%s' "$MSG"   | sed 's/\\/\\\\/g; s/"/\\"/g')"
 SAFE_TITLE="$(printf '%s' "$TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g')"
 
+# ── Dry run ───────────────────────────────────────────────────────────────────
+# HARNESS_NOTIFY_DRYRUN=1 prints what would be delivered and sends nothing. The
+# test suite sets it so a green run does not spray real notifications, and it is
+# useful by hand when checking payload shaping.
+if [ -n "${HARNESS_NOTIFY_DRYRUN:-}" ]; then
+  printf '[dry-run] %s — %s\n' "$SAFE_TITLE" "$SAFE_MSG" >&2
+  exit 0
+fi
+
 # ── Platform delivery ─────────────────────────────────────────────────────────
 case "$(uname -s)" in
   Darwin)

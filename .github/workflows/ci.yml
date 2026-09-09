@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS ships bash 3.2 and BSD coreutils; Ubuntu has bash 5 and GNU.
+        # The suite must pass on both, because the harness runs on both.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq (macOS)
+        if: runner.os == 'macOS'
+        run: brew list jq >/dev/null 2>&1 || brew install jq
+
+      - name: Report shell versions
+        run: |
+          bash --version | head -n1
+          jq --version
+
+      - name: Run test suite
+        run: ./tests/run.sh
+
+  lint:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint shell
+        run: ./scripts/lint.sh --strict
