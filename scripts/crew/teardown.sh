@@ -29,6 +29,8 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
 . "$CODE_ROOT/scripts/lib/crew.sh"
 # shellcheck source=backend.sh
 . "$CODE_ROOT/scripts/crew/backend.sh"
+# shellcheck source=../lib/gate.sh
+. "$CODE_ROOT/scripts/lib/gate.sh"
 
 die() { printf '%s\n' "$1" >&2; exit "${2:-2}"; }
 
@@ -132,14 +134,37 @@ else
     direct-PR)   land_direct_pr && LANDED=1 ;;
     local-only)  land_local_only && LANDED=1 ;;
     no-mistakes)
-      if land_direct_pr; then
-        LANDED=1
-        "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
-          --question "$TASK is registered no-mistakes, but the gate tool is not verified on this machine. Run the gate by hand on ${PR_URL:-the PR}, or approve merging without it?" \
-          --options "run the gate by hand,merge without the gate" \
-          --recommend "run the gate by hand — the registered posture asked for it" >/dev/null 2>&1 || true
-        printf 'no-mistakes degraded to direct-PR; a decision has been filed (see docs/verification/crew-spike.md).\n' >&2
-      fi ;;
+      # The gate runs BEFORE landing, in the worktree, while the crewmate's
+      # changes are still isolated. Gating after the PR is open only tells the
+      # operator what they already merged.
+      GATE_OUT="$(gate_run "$WT" 2>&1)"; GATE_RC=$?
+      case "$GATE_RC" in
+        0)
+          [ -n "$GATE_OUT" ] && printf '%s\n' "$GATE_OUT" >&2
+          printf 'no-mistakes gate passed for %s.\n' "$TASK" >&2
+          land_direct_pr && LANDED=1 ;;
+        1)
+          # Findings block delivery. Nothing is pushed and the worktree stays,
+          # so the crewmate's branch is still there to fix.
+          printf 'teardown: the no-mistakes gate found blocking issues in %s:\n%s\n' "$TASK" "$GATE_OUT" >&2
+          "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
+            --question "$TASK failed its no-mistakes gate. Send it back to the crewmate, or override and deliver anyway?" \
+            --options "send it back,override and deliver" \
+            --recommend "send it back — the gate is the reason this project is registered no-mistakes" >/dev/null 2>&1 || true
+          ;;
+        *)
+          # No usable gate. Deliver as direct-PR, but never report this as
+          # gated: an unconfigured project makes `check` a no-op that always
+          # passes, so silence here would be indistinguishable from success.
+          if land_direct_pr; then
+            LANDED=1
+            "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
+              --question "$TASK is registered no-mistakes, but $PROJECT has no usable gate (needs no-mistakes in node_modules and a .no-mistakes.json). Run the gate by hand on ${PR_URL:-the PR}, or approve merging without it?" \
+              --options "run the gate by hand,merge without the gate" \
+              --recommend "run the gate by hand — the registered posture asked for it" >/dev/null 2>&1 || true
+            printf 'no-mistakes degraded to direct-PR: no usable gate in %s. A decision has been filed.\n' "$PROJECT" >&2
+          fi ;;
+      esac ;;
   esac
 fi
 

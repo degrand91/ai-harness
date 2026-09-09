@@ -40,7 +40,8 @@ crew() {
 mkmission "$home" m1 '{"state":"executing","features":[
   {"id":"D001","slug":"a","state":"in_progress"},{"id":"D002","slug":"b","state":"in_progress"},
   {"id":"D003","slug":"c","state":"in_progress"},{"id":"N001","slug":"d","state":"in_progress"},
-  {"id":"L001","slug":"e","state":"in_progress"},{"id":"L002","slug":"f","state":"in_progress"}]}' >/dev/null
+  {"id":"L001","slug":"e","state":"in_progress"},{"id":"L002","slug":"f","state":"in_progress"},
+  {"id":"N002","slug":"g","state":"in_progress"},{"id":"N003","slug":"h","state":"in_progress"}]}' >/dev/null
 
 # A project with a real remote, so push is genuine.
 remote="$home/origin.git"; git init -q --bare "$remote"
@@ -147,6 +148,46 @@ it "and files a decision rather than quietly skipping its own gate"
 q="$(cat "$home/missions/m1/decisions/"*.json 2>/dev/null)"
 assert_contains "$q" "N001"
 assert_contains "$q" "gate"
+
+# A project that really has a gate. The stub sits where the real per-project
+# devDependency does; gate.test.sh pins it against the published contract.
+nm_stub() {  # <project-root> <check-json>
+  mkdir -p "$1/node_modules/.bin"
+  cat > "$1/node_modules/.bin/no-mistakes" <<STUB
+#!/usr/bin/env bash
+case "\$1 \$2" in
+  "config resolve") printf '%s\n' '{"configPath":".no-mistakes.json"}' ;;
+  *) printf '%s\n' '$2' ;;
+esac
+STUB
+  chmod +x "$1/node_modules/.bin/no-mistakes"
+}
+CLEAN_REPORT='{"react":[],"queues":[],"rules":[],"integration":[],"codebase":[],"advisories":[],"warnings":[]}'
+DIRTY_REPORT='{"react":[],"queues":[],"integration":[],"codebase":[],"advisories":[],"warnings":[],"rules":[{"rule":"no-cross-import","file":"src/a.ts","line":3,"message":"nope"}]}'
+
+it "a passing gate delivers, and says the gate actually ran"
+work N002 nm-proj no-mistakes
+nm_stub "$(crew_meta_get "$home" N002 worktree)" "$CLEAN_REPORT"
+crew teardown.sh N002
+assert_rc 0 "$HOOK_RC"
+assert_contains "$HOOK_OUT" "gate passed"
+assert_not_contains "$HOOK_OUT" "degraded"
+assert_contains "$(git -C "$remote" branch --list)" "hc/m1/n002"
+
+it "a failing gate blocks delivery instead of opening a PR"
+work N003 nm-proj no-mistakes
+nm_stub "$(crew_meta_get "$home" N003 worktree)" "$DIRTY_REPORT"
+crew teardown.sh N003
+assert_rc 1 "$HOOK_RC"
+assert_contains "$HOOK_OUT" "no-cross-import"
+assert_not_contains "$(git -C "$remote" branch --list)" "hc/m1/n003"
+
+it "and keeps the branch and worktree so the crewmate can fix it"
+[ -d "$home/data/worktrees/nm-proj/N003" ] || _fail "worktree removed after a blocked gate"
+assert_file_exists "$home/state/N003.close-pending"
+
+it "and files a decision, since a blocked delivery needs a human call"
+assert_contains "$(cat "$home/missions/m1/decisions/"*.json)" "failed its no-mistakes gate"
 
 # --- local-only --------------------------------------------------------------
 mkproj lo-proj local-only
