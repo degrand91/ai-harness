@@ -28,17 +28,33 @@ GH
 chmod +x "$stubdir/gh"
 export GH_LOG
 
-# Drop only the PATH entries that provide a given tool, keeping everything else
-# teardown needs. Hard-coding a minimal PATH is not portable: gh lives in
-# /opt/homebrew/bin on macOS but in /usr/bin on Ubuntu, where a minimal
-# "/usr/bin:/bin" still finds it and the test silently checks nothing.
+# A PATH with one tool unavailable and everything else intact.
+#
+# Neither shortcut works across both CI platforms:
+#   PATH=/usr/bin:/bin      -- hides gh on macOS (/opt/homebrew/bin) but NOT on
+#                              Ubuntu, where gh IS /usr/bin/gh, so the test
+#                              silently checks nothing.
+#   drop the dir holding gh -- on Ubuntu that is /usr/bin, which also holds
+#                              bash, so the script loses its own interpreter.
+# So a directory that provides the tool is replaced by a symlink farm of itself
+# minus that one entry.
 path_without() {  # <tool>
-  local out="" d
+  local tool="$1" out="" d f b farm i=0
   IFS=: read -ra _dirs <<< "$PATH"
   for d in "${_dirs[@]}"; do
     [ -n "$d" ] || continue
-    [ -x "$d/$1" ] && continue
-    out="$out:$d"
+    if [ -x "$d/$tool" ]; then
+      farm="$home/nopath-$tool-$i"; i=$((i+1))
+      mkdir -p "$farm"
+      for f in "$d"/*; do
+        b="${f##*/}"
+        [ "$b" = "$tool" ] && continue
+        [ -e "$farm/$b" ] || ln -s "$f" "$farm/$b" 2>/dev/null || true
+      done
+      out="$out:$farm"
+    else
+      out="$out:$d"
+    fi
   done
   printf '%s' "${out#:}"
 }
