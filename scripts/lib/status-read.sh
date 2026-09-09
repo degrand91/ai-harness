@@ -113,17 +113,6 @@ file_mtime_epoch() {
   printf '%s' "$t"
 }
 
-# Batched mtime: prints "<epoch> <path>" per readable file, in ONE stat call.
-# Both stat implementations accept many paths at once, so a 40-mission fleet
-# costs one process instead of eighty. Unreadable files are simply absent from
-# the output; callers treat a missing entry as unknown.
-paths_mtime_epochs() {
-  [ "$#" -gt 0 ] || return 0
-  stat -c '%Y %n' "$@" 2>/dev/null && return 0
-  stat -f '%m %N' "$@" 2>/dev/null && return 0
-  return 0
-}
-
 # Newest mtime across the files a live mission touches; 0 when none is readable.
 mission_last_activity() {
   local dir="${1:?mission_last_activity: mission dir required}" newest=0 f t
@@ -175,7 +164,6 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     title)    shift; status_title "$@" ;;
     mtime)    shift; file_mtime_epoch "$@" ;;
     activity) shift; mission_last_activity "$@" ;;
-    mtimes)   shift; paths_mtime_epochs "$@" ;;
     list)     shift; status_active_missions "$@" ;;
     normalize) shift; status_normalize "$@" ;;
     -h|--help|"") sed -n '2,26{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;

@@ -119,7 +119,7 @@ launch() {  # <prompt>
   [ "${#ALLOW_ARR[@]}" -gt 0 ] && cmd+=(--allowed-tools "${ALLOW_ARR[@]}")
   [ "${#DENY_ARR[@]}" -gt 0 ]  && cmd+=(--disallowed-tools "${DENY_ARR[@]}")
 
-  # The stream goes through render.sh: raw JSON to $STREAM for parsing, a
+  # The stream goes through render.py: raw JSON to $STREAM for parsing, a
   # readable line to stdout so the backend window shows the crewmate working.
   # Without this the window the operator is meant to watch was empty.
   printf '%s' "$prompt" \
