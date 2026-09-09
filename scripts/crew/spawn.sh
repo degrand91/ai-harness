@@ -171,25 +171,12 @@ PROJ_ALLOW_RAW="$(registry_allow "$REGISTRY" "$PROJECT" 2>/dev/null || true)"
 SAY="$CODE_ROOT/scripts/crew/say.sh"
 LEDGER_PATH="$HARNESS_ROOT/state/$TASK.ledger"
 
-ALLOW_JSON="$(python3 - "$PROJ_ALLOW_RAW" "$SAY" "$SCOUT" <<'PYEOF'
-import json, sys
-raw, say, scout = sys.argv[1:4]
-if scout == "1":
-    tools = ["Read", "Glob", "Grep", "TodoWrite", "Write"]
-else:
-    tools = ["Read", "Edit", "Write", "Glob", "Grep", "TodoWrite",
-             "Bash(git add:*)", "Bash(git commit:*)", "Bash(git status:*)",
-             "Bash(git diff:*)", "Bash(git log:*)", "Bash(git show:*)"]
-# The one command a crewmate may use to speak to its supervisor. Without it the
-# brief asks for progress reports the sandbox forbids.
-tools.append(f"Bash({say}:*)")
-for c in (raw or "").split(","):
-    c = c.strip().rstrip("*").rstrip().rstrip(":").strip()
-    if c:
-        tools.append(f"Bash({c}:*)")
-print(json.dumps(tools))
-PYEOF
-)"
+# An array, not an interpolated string: building argv by string concatenation
+# is the exact class of bug this file already shipped once.
+ALLOW_ARGS=(--say "$SAY" --project-allow "$PROJ_ALLOW_RAW")
+[ "$SCOUT" -eq 1 ] && ALLOW_ARGS+=(--scout)
+ALLOW_JSON="$("$CODE_ROOT/scripts/crew/allowlist.py" "${ALLOW_ARGS[@]}")" \
+  || die "spawn.sh: could not build the tool allowlist"
 DENY_JSON='["WebFetch","WebSearch","Agent","NotebookEdit"]'
 
 # --- 6. record, then launch --------------------------------------------------
