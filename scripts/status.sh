@@ -17,6 +17,10 @@ MISSIONS_DIR="${HARNESS_ROOT}/missions"
 # shellcheck source=lib/status-read.sh
 . "${CODE_ROOT}/scripts/lib/status-read.sh"
 
+case "${1:-}" in
+  -h|--help) sed -n '3,8{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+esac
+
 MISSION_ID="${1:-}"
 if [[ -z "$MISSION_ID" ]]; then
   # pick most-recent

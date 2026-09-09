@@ -10,6 +10,10 @@
 set -uo pipefail
 CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
+case "${1:-}" in
+  -h|--help) sed -n '2,10{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+esac
+
 OUT="${1:-$HARNESS_ROOT/state/fleet.html}"
 mkdir -p "$(dirname "$OUT")" 2>/dev/null || true
 

@@ -22,6 +22,10 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
 # shellcheck source=backend.sh
 . "$CODE_ROOT/scripts/crew/backend.sh"
 
+case "${1:-}" in
+  -h|--help) sed -n '2,18{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+esac
+
 QUIET=0
 [ "${1:-}" = "--quiet" ] && QUIET=1
 say() { [ "$QUIET" -eq 1 ] || printf '%s\n' "$*"; }

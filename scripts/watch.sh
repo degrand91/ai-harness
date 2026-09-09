@@ -49,8 +49,16 @@ MAX_PARK="${HARNESS_MAX_PARK:-28800}"
 # suite needs a way to bound it from the environment — the same affordance as
 # HARNESS_CREW_BACKEND=fake.
 ONCE="${HARNESS_WATCH_ONCE:-0}"
-[ "${1:-}" = "--once" ] && ONCE=1
 case "$ONCE" in ''|*[!0-9]*) ONCE=0 ;; esac
+# An UNRECOGNISED FLAG MUST NOT FALL THROUGH TO THE PARK LOOP. `watch.sh --help`
+# used to hang the terminal for up to eight hours, because anything that was not
+# exactly `--once` was treated as "keep parking".
+case "${1:-}" in
+  --once) ONCE=1 ;;
+  -h|--help) sed -n '2,28{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
+  "") ;;
+  *) printf 'watch.sh: unknown option %s\n' "$1" >&2; exit 2 ;;
+esac
 
 stand_down() { [ -f "$STATE/.watch-off" ] || [ -f "$STATE/.afk" ]; }
 
