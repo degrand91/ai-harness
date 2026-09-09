@@ -52,4 +52,24 @@ it "exits 0 with no missions at all"
 run_hook "$HOOK" '{"agent_type":"worker"}' "CLAUDE_PROJECT_DIR=$(mktmphome)"
 assert_rc 0 "$HOOK_RC"
 
+it "survives malformed input rather than exiting non-zero"
+# §0.5 fixed this class in three hooks and missed this one. A hook that crashes
+# on a payload it cannot read is a hook that reports a failure that did not
+# happen.
+run_hook "$HOOK" 'garbage' "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+
+it "survives empty stdin"
+run_hook "$HOOK" '' "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+
+it "survives a payload with no recognisable fields"
+run_hook "$HOOK" '{"nope":1}' "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+
+it "leaves the tokens block untouched when it cannot read the payload"
+before="$(jq -S .tokens "$sf")"
+run_hook "$HOOK" 'garbage' "CLAUDE_PROJECT_DIR=$home"
+assert_eq "$before" "$(jq -S .tokens "$sf")"
+
 finish

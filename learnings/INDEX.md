@@ -4,11 +4,16 @@
 
 ## Patterns
 
+
+
+
+
 - [contract-defect-amend-not-patch](patterns/contract-defect-amend-not-patch.md) — When the integration check (or a validator) surfaces a defect in the contract itself — not in the code — amend the contract through its amendments log and re-run. Do not paper over with a "the intent was clear" pass. (from `2026-05-23-ship-v0-3-multi-provider`)
 - [recursive-mission-stability-guards](patterns/recursive-mission-stability-guards.md) — When a mission edits the harness itself (recursive mission), every feature's contract slice must include guards that the still-in-use agent files (especially scrutiny-validator.md) remain parseable and byte-unmodified. (from `2026-05-23-ship-v0-3-multi-provider`)
 - [sanity-check-settings-deny-at-intake](patterns/sanity-check-settings-deny-at-intake.md) — At mission intake, scan .claude/settings.json `permissions.deny` for overbroad globs that would block mandatory mission artifacts. (from `2026-05-23-add-marker2`)
 
 ## Anti-patterns
+
 
 - [haiku-scrutiny-hallucination](anti-patterns/haiku-scrutiny-hallucination.md) — Haiku scrutiny validator fabricates bash assertion results without running any tools, reporting false failures. (from `2026-05-24-browser-qa-capability`; recurred in `2026-05-24-browser-qa-capability`)
 - [validator-prose-preamble](anti-patterns/validator-prose-preamble.md) — Validator subagents tend to wrap the structured verdict in a conversational preamble, breaking downstream parsing. (from `2026-05-22-add-marker`; recurred in `2026-05-23-add-marker2` and `2026-05-23-ship-v0-3-multi-provider`)

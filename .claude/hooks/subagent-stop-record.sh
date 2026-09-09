@@ -7,10 +7,15 @@
 # Input: JSON on stdin with hook_event_name=SubagentStop and (depending on
 # Claude Code version) an agent_type field plus optional usage/token fields.
 
-set -euo pipefail
+# NOT `set -e`. §0.5 fixed this crash class in three hooks and missed this one:
+# a payload jq cannot parse exited the hook non-zero instead of doing nothing.
+# Recording a token count is best-effort; the subagent it observes has already
+# finished, and there is nothing useful to fail about.
+set -uo pipefail
 
-INPUT="$(cat)"
-AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // .matcher // "subagent"' 2>/dev/null)"
+INPUT="$(cat 2>/dev/null || true)"
+AGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.agent_type // .matcher // "subagent"' 2>/dev/null || echo subagent)"
+[ -n "$AGENT_TYPE" ] || AGENT_TYPE=subagent
 
 HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-.}"
 MISSIONS="${HARNESS_ROOT}/missions"

@@ -49,6 +49,7 @@ printf '%s' "$SNAP" | jq -r '
   "<h2>Missions</h2>",
   ([ .missions[] | select(.active or .state == "unknown") |
      "<div class=\"card\"><div class=\"row\"><span class=\"id\">" + (.id|esc) + "</span>"
+     + (if .title and .title != .id then "<span class=\"dim\">" + (.title|esc) + "</span>" else "" end)
      + badge(.state)
      + (if .project then "<span class=\"dim\">" + (.project|esc) + "</span>" else "" end)
      + (if .open_holds > 0 then badge((.open_holds|tostring) + " open decision(s)") else "" end)
