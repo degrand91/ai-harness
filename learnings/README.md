@@ -16,6 +16,34 @@ learnings/
     └── <slug>.md
 ```
 
+## Lifecycle
+
+The corpus has taxonomy and an index; `scripts/learnings-curate.sh` gives it a
+sense of **age**, so it does not grow without bound and load everything into
+planning forever.
+
+| Tier | Meaning |
+|---|---|
+| hot | named in one of the last 3 missions |
+| warm | has a recurrence log entry — it keeps happening |
+| cold | neither, and older than 60 days |
+
+```sh
+./scripts/learnings-curate.sh          # report tiers and the budget verdict
+./scripts/learnings-curate.sh --apply  # archive what the report proposed
+```
+
+Three rules:
+
+1. **Archiving is proposed, never performed** without `--apply`. Deleting a
+   hard-won note because a counter went over is how a corpus stops being trusted.
+2. **Anti-patterns are never auto-archived.** A trap you stopped hitting is
+   exactly the one you are about to hit again; absence from recent missions is
+   evidence it is working, not evidence it is stale.
+3. **Nothing is deleted.** Archived entries move to `learnings/archive/`.
+
+`/stow` runs the sweep, the routing and this curation together.
+
 ## Pattern entry template
 
 ```markdown

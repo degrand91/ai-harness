@@ -77,7 +77,12 @@
       "Bash(./scripts/notify.sh *)",
       "Skill(afk)",
       "Skill(pause)",
-      "Skill(resume)"
+      "Skill(resume)",
+      "Bash(./scripts/learnings-curate.sh *)",
+      "Bash(./scripts/memory-budget.sh *)",
+      "Bash(./scripts/lease.sh *)",
+      "Bash(./scripts/fleet-html.sh *)",
+      "Skill(stow)"
     ],
     "deny": [
       "Bash(rm -rf /)",
