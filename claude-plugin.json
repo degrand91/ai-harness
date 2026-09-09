@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Factory-Missions-style autonomous coding harness for Claude Code. Provides Orchestrator, Worker, and Validator subagents, slash-skills, and lifecycle hooks for multi-feature missions.",
   "author": "Stefano De Grandis",
-  "repository": "git+https://github.com/stefanodegrandis/harness.git",
+  "repository": "git+https://github.com/degrand91/ai-harness.git",
   "_repository_note": "Placeholder URL — update with the actual public repository address when the repo is published.",
   "minimum_claude_code_version": "0.2.0",
   "capabilities": {
