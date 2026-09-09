@@ -140,6 +140,14 @@ fi
 
 CONTEXT="${CONTEXT}"$'\n'"Use /fleet for everything in flight, /mission-status to inspect, /mission-resume to continue."
 
+# One accounted budget replaces the per-section constants. Each section was
+# bounded on its own; multiplied by a projects registry, every session started
+# heavy and no single piece looked large enough to blame.
+if [ -x "$CODE_ROOT/scripts/memory-budget.sh" ]; then
+  FITTED="$(printf '%s' "$CONTEXT" | "$CODE_ROOT/scripts/memory-budget.sh" fit 2>/dev/null || true)"
+  [ -n "$FITTED" ] && CONTEXT="$FITTED"
+fi
+
 jq -n --arg ctx "$CONTEXT" '{
   hookSpecificOutput: {
     hookEventName: "SessionStart",
