@@ -59,7 +59,11 @@ Three rules learned from the hooks that were already broken when the suite was w
 
 1. **Resolve code from `BASH_SOURCE`, data from `CLAUDE_PROJECT_DIR`.** A hook that sources a library from `CLAUDE_PROJECT_DIR` silently disables itself the moment those two differ.
 2. **Do not use `set -e` in a hook.** Malformed input made three separate hooks exit non-zero instead of doing nothing. Use `set -uo pipefail` and guard each `jq` with `|| true`.
-3. **State comes from `scripts/lib/status-read.sh`.** Never read `.state` out of a `status.json` directly — mission files carry two vocabularies, and reading one of them is how a Stop guard came to report "all clear" on the only mission that was actually stuck.
+3. **State comes from the state library, never from `.state` directly.** Mission files carry two vocabularies, and reading one of them is how a Stop guard came to report "all clear" on the only mission that was actually stuck. `scripts/lib/state-vocabulary.json` is the owner of the *rule*; `status-read.sh` (bash, for hooks) and `harness.py` (for batch readers) are two lookups over it, and `tests/state-vocabulary.test.sh` asserts they agree. `.features[].state` is an ordinary field and is read directly on purpose.
+
+4. **Never hand-roll a delimited-string protocol in bash.** Four of this repo's defects were that one mistake: `IFS=$'\t' read` collapses consecutive tabs so an empty field shifts every later field left (twice), a space-joined list whose entries contain spaces got split back into fragments, and `python3 - <<'PY'` ate the stdin its own program needed. If you are passing a record, use a real script and pass structured data — `scripts/snapshot.py` and `scripts/crew/allowlist.py` exist for exactly this reason.
+
+5. **Make relative file times explicit in tests.** Fixtures written in one run share a timestamp, so any assertion about "newest" is undefined and passes by luck until a different filesystem disagrees. It has bitten three times. Use `age_file`, `touch_now` and `age_mission_by` from `fixtures.sh` rather than writing two files and hoping.
 
 CI runs the suite on Ubuntu and macOS. macOS ships bash 3.2, so no `mapfile`, no associative arrays, no `${var^^}`.
 
