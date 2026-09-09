@@ -49,23 +49,6 @@ fi
 
 [ -d "$MISSIONS" ] || exit 0
 
-# Portable mtime in epoch seconds; prints 0 when unavailable so a missing file
-# can never look "recently active".
-mtime_epoch() {
-  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || printf '0'
-}
-
-# Newest mtime across the files a live mission touches.
-last_activity() {
-  local dir="$1" newest=0 f t
-  for f in "$dir/status.json" "$dir/log.md"; do
-    [ -f "$f" ] || continue
-    t="$(mtime_epoch "$f")"
-    [ "$t" -gt "$newest" ] 2>/dev/null && newest="$t"
-  done
-  printf '%s' "$newest"
-}
-
 PROBLEMS=()
 NOW="$(date -u +%s)"
 
@@ -102,8 +85,15 @@ for mission_dir in "$MISSIONS"/*/; do
       map(.id) | join(",")
     ' "$status_file" 2>/dev/null || true)"
     if [ -n "$stuck" ]; then
-      last="$(last_activity "$mission_dir")"
-      age=$(( NOW - last ))
+      last="$(mission_last_activity "$mission_dir")"
+      # An unreadable mtime (0) means "unknown", never "ancient". Reporting a
+      # mission as stale because stat failed would block every stop on a host
+      # whose stat we cannot read.
+      if [ "$last" -gt 0 ] 2>/dev/null; then
+        age=$(( NOW - last ))
+      else
+        age=0
+      fi
       if [ "$age" -gt "$STUCK_SECONDS" ]; then
         PROBLEMS+=("Mission ${id}: feature(s) ${stuck} in progress with no outcome and no activity for $(( age / 60 )) minutes")
       fi

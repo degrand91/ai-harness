@@ -97,4 +97,27 @@ for f in "$HARNESS_ROOT"/missions/*/status.json; do
 done
 assert_eq "" "$unknowns"
 
+# --- portable mtime ---------------------------------------------------------
+it "reads a real mtime as a plausible epoch on this platform"
+# Regression guard for the GNU/BSD `stat` flag clash: `stat -f %m` SUCCEEDS on
+# GNU (where -f means --file-system), so a BSD-first chain silently yielded 0 on
+# Linux and every file looked decades old.
+now="$(date -u +%s)"
+m="$(file_mtime_epoch "$home/missions/canon/status.json")"
+case "$m" in ''|*[!0-9]*) _fail "mtime not numeric: [$m]" ;; esac
+[ "$m" -gt $(( now - 600 )) ] || _fail "mtime $m implausibly old (now=$now)"
+[ "$m" -le $(( now + 600 )) ] || _fail "mtime $m implausibly far in the future"
+
+it "returns 0 for a file that does not exist"
+assert_eq "0" "$(file_mtime_epoch "$home/missions/canon/nope.json")"
+
+it "takes the newest mtime across a mission's files"
+a="$(mission_last_activity "$home/missions/canon")"
+case "$a" in ''|*[!0-9]*) _fail "activity not numeric: [$a]" ;; esac
+[ "$a" -gt $(( now - 600 )) ] || _fail "activity $a implausibly old"
+
+it "returns 0 for a mission directory with no readable files"
+mkdir -p "$home/missions/empty-dir"
+assert_eq "0" "$(mission_last_activity "$home/missions/empty-dir")"
+
 finish

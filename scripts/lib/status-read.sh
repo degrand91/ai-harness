@@ -94,6 +94,36 @@ status_is_active() {
   esac
 }
 
+# Portable mtime in epoch seconds.
+#
+# GNU first, and the result is VALIDATED as numeric before it is trusted. The
+# obvious ordering (`stat -f %m || stat -c %Y`) is wrong: `-f` means
+# `--file-system` to GNU stat, so on Linux the first branch SUCCEEDS with
+# unrelated output and the fallback is never reached. Every mtime then reads as
+# 0 and every file looks decades old — invisible on macOS, caught by CI on
+# ubuntu-latest.
+#
+# Prints 0 when genuinely unreadable. Callers must treat 0 as UNKNOWN, never as
+# "very old", or a stat failure turns into a false staleness report.
+file_mtime_epoch() {
+  local f="${1:?file_mtime_epoch: path required}" t
+  t="$(stat -c %Y "$f" 2>/dev/null || true)"
+  case "$t" in ''|*[!0-9]*) t="$(stat -f %m "$f" 2>/dev/null || true)" ;; esac
+  case "$t" in ''|*[!0-9]*) t=0 ;; esac
+  printf '%s' "$t"
+}
+
+# Newest mtime across the files a live mission touches; 0 when none is readable.
+mission_last_activity() {
+  local dir="${1:?mission_last_activity: mission dir required}" newest=0 f t
+  for f in "$dir/status.json" "$dir/log.md"; do
+    [ -f "$f" ] || continue
+    t="$(file_mtime_epoch "$f")"
+    [ "$t" -gt "$newest" ] 2>/dev/null && newest="$t"
+  done
+  printf '%s' "$newest"
+}
+
 # Best-effort human label for a mission directory.
 status_title() {
   local dir="${1:?status_title: mission dir required}"
@@ -132,6 +162,8 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     state)    shift; status_state "$@" ;;
     active)   shift; status_is_active "$@" ;;
     title)    shift; status_title "$@" ;;
+    mtime)    shift; file_mtime_epoch "$@" ;;
+    activity) shift; mission_last_activity "$@" ;;
     list)     shift; status_active_missions "$@" ;;
     normalize) shift; status_normalize "$@" ;;
     -h|--help|"") sed -n '2,26{s/^# \{0,1\}//;s/^#$//;p;}' "$0"; exit 0 ;;
