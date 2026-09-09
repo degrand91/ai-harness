@@ -6,7 +6,13 @@
 # This implementation is an original POSIX bash adaptation for the harness.
 set -euo pipefail
 
-HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# HARNESS_AUDIT_ROOT lets the suite point the audit at a fixture home; without
+# it the audit inspects its own checkout, which is the normal case.
+HARNESS_ROOT="${HARNESS_AUDIT_ROOT:-$CODE_ROOT}"
+
+# shellcheck source=lib/status-read.sh
+. "${CODE_ROOT}/scripts/lib/status-read.sh"
 
 PASSED=0
 FAILED=0
@@ -95,7 +101,6 @@ else
 fi
 
 # ── Check 5: All hooks wired in settings.json ─────────────────────────────────
-hook_errors=""
 orphans=""
 if [ -d "${hooks_dir}" ]; then
   settings_content=$(cat "${SETTINGS}")
@@ -139,16 +144,18 @@ else
 fi
 
 # ── Check 7: Mission state consistency ───────────────────────────────────────
-valid_states="intake|planning|contract|awaiting_approval|executing|feature_loop|closing|closed|abandoned|paused"
+# Reads through scripts/lib/status-read.sh, the single owner of mission state.
+# Reading `.state` directly here reported the drifted-schema mission as invalid
+# even though it is a perfectly legible executing mission — the same defect the
+# Stop guard had, in a second place.
 missions_dir="${HARNESS_ROOT}/missions"
 state_errors=""
 if [ -d "${missions_dir}" ]; then
   for status_file in "${missions_dir}"/*/status.json; do
     [ -f "${status_file}" ] || continue
     mission_id=$(basename "$(dirname "${status_file}")")
-    state=$(jq -r '.state // "missing"' "${status_file}" 2>/dev/null || echo "parse_error")
-    if ! echo "${state}" | grep -qE "^(${valid_states})$"; then
-      state_errors="${state_errors} ${mission_id}(invalid state: ${state})"
+    if ! status_state "${status_file}" >/dev/null; then
+      state_errors="${state_errors} ${mission_id}(unclassifiable state)"
     fi
   done
 fi
@@ -165,9 +172,8 @@ if [ -d "${missions_dir}" ]; then
   for status_file in "${missions_dir}"/*/status.json; do
     [ -f "${status_file}" ] || continue
     mission_id=$(basename "$(dirname "${status_file}")")
-    mission_state=$(jq -r '.state // "unknown"' "${status_file}" 2>/dev/null || echo "unknown")
-    # Skip closed and abandoned missions
-    if echo "${mission_state}" | grep -qE "^(closed|abandoned)$"; then
+    # Skip terminal missions, via the single owner of that decision.
+    if ! status_is_active "${status_file}"; then
       continue
     fi
     # Look for features with state "red"

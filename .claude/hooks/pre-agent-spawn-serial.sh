@@ -14,17 +14,20 @@
 # Input: JSON on stdin from Claude Code hook system.
 #   { "tool_name": "Agent", "tool_input": { "subagent_type": "worker" } }
 
-set -euo pipefail
+# NOT `set -e`: a payload this hook cannot parse must fail OPEN. Blocking a
+# legitimate spawn because jq hiccuped is worse than the theoretical concurrent
+# spawn it would prevent, and an unparseable payload does not occur in practice.
+set -uo pipefail
 
-INPUT="$(cat)"
-TOOL_NAME="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)"
+INPUT="$(cat 2>/dev/null || true)"
+TOOL_NAME="$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)"
 
 # Not an Agent spawn — not our concern.
 if [ "$TOOL_NAME" != "Agent" ]; then
   exit 0
 fi
 
-SUBAGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // empty' 2>/dev/null)"
+SUBAGENT_TYPE="$(printf '%s' "$INPUT" | jq -r '.tool_input.subagent_type // empty' 2>/dev/null || true)"
 
 STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/agent-spawn-state.json"
 
@@ -50,9 +53,13 @@ if [ ! -f "$STATE_FILE" ]; then
   write_state false 0
 fi
 
-IN_FLIGHT="$(jq -r '.in_flight_non_explorer' "$STATE_FILE")"
-EXPLORER_COUNT="$(jq -r '.explorer_count' "$STATE_FILE")"
-UPDATED_AT="$(jq -r '.updated_at // empty' "$STATE_FILE")"
+# A corrupt state file is reset rather than inherited: `false`/`0` is the safe
+# reading, since it only ever permits a spawn the operator asked for.
+IN_FLIGHT="$(jq -r '.in_flight_non_explorer // false' "$STATE_FILE" 2>/dev/null || echo false)"
+EXPLORER_COUNT="$(jq -r '.explorer_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
+UPDATED_AT="$(jq -r '.updated_at // empty' "$STATE_FILE" 2>/dev/null || true)"
+case "$IN_FLIGHT" in true|false) ;; *) IN_FLIGHT=false ;; esac
+case "$EXPLORER_COUNT" in ''|*[!0-9]*) EXPLORER_COUNT=0 ;; esac
 
 # ---------------------------------------------------------------------------
 # Stale-lock check: reset if in_flight but updated_at > 600s ago

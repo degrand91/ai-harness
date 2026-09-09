@@ -28,6 +28,41 @@ At minimum your PR must contain:
 
 If you ran the harness while building your contribution, include the full mission folder. If you could not (because the harness itself was broken), explain why in the PR description.
 
+## The test rule
+
+A mission folder is evidence that a change worked once. It is not a regression gate. **Any change to a file under `scripts/` or `.claude/hooks/` must also ship a test**, because these are the files that run on every turn and fail silently when they fail.
+
+```sh
+./tests/run.sh                       # everything
+./tests/run.sh --filter stop-no-red  # one hook
+./tests/run.sh --list                # what exists
+./scripts/lint.sh                    # shellcheck (skips cleanly if absent)
+./scripts/doctor.sh --check          # tools and state roots
+```
+
+Tests are plain `*.test.sh` files under `tests/`, with no framework to install — `bash`, `jq`, and coreutils are all the harness itself requires, so they are all the suite may require. `tests/lib/fixtures.sh` gives you a throwaway harness home, mission builders, hook invocation, and assertions:
+
+```bash
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixtures.sh"
+
+home="$(mktmphome)"
+mkmission "$home" 2026-01-01-demo '{"state":"executing","features":[]}' >/dev/null
+
+it "allows a stop when nothing is red"
+run_hook stop-no-red-status.sh '{"hook_event_name":"Stop"}' "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+
+finish
+```
+
+Three rules learned from the hooks that were already broken when the suite was written:
+
+1. **Resolve code from `BASH_SOURCE`, data from `CLAUDE_PROJECT_DIR`.** A hook that sources a library from `CLAUDE_PROJECT_DIR` silently disables itself the moment those two differ.
+2. **Do not use `set -e` in a hook.** Malformed input made three separate hooks exit non-zero instead of doing nothing. Use `set -uo pipefail` and guard each `jq` with `|| true`.
+3. **State comes from `scripts/lib/status-read.sh`.** Never read `.state` out of a `status.json` directly — mission files carry two vocabularies, and reading one of them is how a Stop guard came to report "all clear" on the only mission that was actually stuck.
+
+CI runs the suite on Ubuntu and macOS. macOS ships bash 3.2, so no `mapfile`, no associative arrays, no `${var^^}`.
+
 ## Code style
 
 Follow the same contract discipline the harness enforces on the code it produces:

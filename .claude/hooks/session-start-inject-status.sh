@@ -1,50 +1,94 @@
 #!/usr/bin/env bash
 #
-# SessionStart hook. If there's an active mission (state != closed/abandoned),
-# inject its current status into the session context so the Orchestrator can
-# resume cleanly without needing to run /mission-status first.
+# SessionStart hook. Injects a bounded summary of every ACTIVE mission so the
+# Orchestrator resumes with the fleet in view instead of having to ask.
 #
-# Output: JSON on stdout with hookSpecificOutput.additionalContext.
-# Exit 0.
+# This previously took `ls -t | head -n1` — one mission, the most recently
+# touched — so with more than one mission in flight the others were invisible on
+# resume. In this repo that hid three of four active missions. It now iterates
+# all of them through scripts/lib/status-read.sh, newest first, and includes
+# missions it cannot classify: a mission the tooling does not understand is
+# exactly the one a human should be told about.
+#
+# Output: JSON on stdout (hookSpecificOutput.additionalContext). ALWAYS exit 0
+# and ALWAYS valid JSON — a SessionStart hook that crashes or emits garbage
+# degrades every turn that follows it.
+#
+# Bounds (Phase 5.2 replaces these constants with an accounted token budget):
+#   HARNESS_SESSION_MAX_MISSIONS   default 3
+#   HARNESS_SESSION_MAX_LOG_LINES  default 5
 
-set -euo pipefail
+set -uo pipefail
 
-HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CODE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
 MISSIONS="${HARNESS_ROOT}/missions"
+MAX_MISSIONS="${HARNESS_SESSION_MAX_MISSIONS:-3}"
+MAX_LOG_LINES="${HARNESS_SESSION_MAX_LOG_LINES:-5}"
 
-cat > /dev/null  # Discard stdin
+cat > /dev/null   # discard stdin
 
-[ ! -d "$MISSIONS" ] && { echo '{}'; exit 0; }
+emit_empty() { printf '{}\n'; exit 0; }
 
-# Find most recently modified mission directory.
-LATEST="$(ls -t "$MISSIONS" 2>/dev/null | grep -v '^\.gitkeep$' | head -n1 || true)"
-[ -z "$LATEST" ] && { echo '{}'; exit 0; }
+# shellcheck source=../../scripts/lib/status-read.sh
+. "$CODE_ROOT/scripts/lib/status-read.sh" 2>/dev/null || emit_empty
+[ -d "$MISSIONS" ] || emit_empty
 
-STATUS_FILE="$MISSIONS/$LATEST/status.json"
-[ ! -f "$STATUS_FILE" ] && { echo '{}'; exit 0; }
+ACTIVE=()
+while IFS= read -r m; do
+  [ -n "$m" ] && ACTIVE+=("$m")
+done < <(status_active_missions "$MISSIONS" 2>/dev/null)
 
-STATE="$(jq -r '.state // "unknown"' "$STATUS_FILE" 2>/dev/null)"
-case "$STATE" in
-  closed|abandoned) echo '{}'; exit 0 ;;
-esac
+[ "${#ACTIVE[@]}" -eq 0 ] && emit_empty
 
-CURRENT="$(jq -r '.current_feature // "—"' "$STATUS_FILE" 2>/dev/null)"
-N_FEATS="$(jq -r '.features | length' "$STATUS_FILE" 2>/dev/null)"
+TOTAL="${#ACTIVE[@]}"
+SHOWN=0
+CONTEXT="Active missions: ${TOTAL}"
+[ "$TOTAL" -gt "$MAX_MISSIONS" ] && CONTEXT="${CONTEXT} (showing newest ${MAX_MISSIONS})"
+CONTEXT="${CONTEXT}"$'\n'
 
-# Tail of log for recency cues.
-LOG_TAIL=""
-if [ -f "$MISSIONS/$LATEST/log.md" ]; then
-  LOG_TAIL="$(tail -n 5 "$MISSIONS/$LATEST/log.md" 2>/dev/null || true)"
-fi
+for id in "${ACTIVE[@]}"; do
+  [ "$SHOWN" -ge "$MAX_MISSIONS" ] && break
+  SHOWN=$((SHOWN + 1))
+  dir="$MISSIONS/$id"
+  sf="$dir/status.json"
 
-CONTEXT="$(printf 'Active mission detected:\n  id: %s\n  state: %s\n  current_feature: %s\n  features in plan: %s\n\nRecent log:\n%s\n\nUse /mission-resume to continue, or /mission-status to inspect.' \
-  "$LATEST" "$STATE" "$CURRENT" "$N_FEATS" "$LOG_TAIL")"
+  state="$(status_state "$sf" 2>/dev/null || true)"
+  [ -z "$state" ] && state="unknown"
+
+  if [ "$state" = "unknown" ]; then
+    CONTEXT="${CONTEXT}"$'\n'"  id: ${id}"$'\n'"  state: unknown — status.json is malformed or uses an unrecognised vocabulary; repair it before relying on this mission"$'\n'
+    continue
+  fi
+
+  current="$(jq -r '.current_feature // "—"' "$sf" 2>/dev/null || printf '—')"
+  nfeat="$(jq -r '(.features // []) | length' "$sf" 2>/dev/null || printf '?')"
+  title="$(status_title "$dir" 2>/dev/null || printf '%s' "$id")"
+
+  CONTEXT="${CONTEXT}"$'\n'"  id: ${id}"
+  [ "$title" != "$id" ] && CONTEXT="${CONTEXT}"$'\n'"  title: ${title}"
+  CONTEXT="${CONTEXT}"$'\n'"  state: ${state}"$'\n'"  current_feature: ${current}"$'\n'"  features in plan: ${nfeat}"
+
+  if [ -f "$dir/log.md" ]; then
+    tail_lines="$(tail -n "$MAX_LOG_LINES" "$dir/log.md" 2>/dev/null || true)"
+    if [ -n "$tail_lines" ]; then
+      CONTEXT="${CONTEXT}"$'\n'"  recent log:"
+      while IFS= read -r line; do
+        CONTEXT="${CONTEXT}"$'\n'"    ${line}"
+      done <<<"$tail_lines"
+    fi
+  fi
+  CONTEXT="${CONTEXT}"$'\n'
+done
+
+CONTEXT="${CONTEXT}"$'\n'"Use /mission-status to inspect, /mission-resume to continue."
 
 jq -n --arg ctx "$CONTEXT" '{
   hookSpecificOutput: {
     hookEventName: "SessionStart",
     additionalContext: $ctx
   }
-}'
+}' 2>/dev/null || emit_empty
 
 exit 0

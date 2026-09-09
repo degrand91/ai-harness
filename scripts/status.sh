@@ -8,8 +8,14 @@
 
 set -euo pipefail
 
-HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Missions are read from the invoking directory when it looks like a harness
+# home, so the suite can point this at a fixture; otherwise from the checkout.
+if [ -d "${PWD}/missions" ]; then HARNESS_ROOT="$PWD"; else HARNESS_ROOT="$CODE_ROOT"; fi
 MISSIONS_DIR="${HARNESS_ROOT}/missions"
+
+# shellcheck source=lib/status-read.sh
+. "${CODE_ROOT}/scripts/lib/status-read.sh"
 
 MISSION_ID="${1:-}"
 if [[ -z "$MISSION_ID" ]]; then
@@ -29,17 +35,21 @@ echo " Mission: ${MISSION_ID}"
 echo "=========================================="
 echo
 
+STATE="$(status_state "${MISSION_DIR}/status.json" || true)"
+
 if command -v jq >/dev/null 2>&1; then
+  printf 'State:          %s\n' "$STATE"
+  [ "$STATE" = "unknown" ] && printf '                (status.json is malformed or uses an unrecognised vocabulary)\n'
   jq -r '
-    "State:          \(.state)",
-    "Started:        \(.started_at)",
+    "Started:        \(.started_at // "—")",
     "Approved:       \(.approved_at // "—")",
     "Closed:         \(.closed_at // "—")",
     "Current:        \(.current_feature // "—")",
     "",
     "Features:",
     (.features[]? | "  \(.id) \(.slug)  \(.state)  color=\(.color // "—")  followups=\(.followups)")
-  ' "${MISSION_DIR}/status.json"
+  ' "${MISSION_DIR}/status.json" 2>/dev/null || echo "(status.json could not be parsed — showing raw file below)"
+  jq -e . "${MISSION_DIR}/status.json" >/dev/null 2>&1 || sed -n '1,20p' "${MISSION_DIR}/status.json"
 else
   echo "(jq not installed — raw status.json:)"
   cat "${MISSION_DIR}/status.json"
