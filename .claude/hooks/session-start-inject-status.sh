@@ -82,7 +82,24 @@ for id in "${ACTIVE[@]}"; do
   CONTEXT="${CONTEXT}"$'\n'
 done
 
-CONTEXT="${CONTEXT}"$'\n'"Use /mission-status to inspect, /mission-resume to continue."
+# Undrained inbox notes come FIRST in the operator's attention, because they are
+# things the captain asked for that nothing has acted on yet.
+INBOX_DIR="${HARNESS_ROOT}/data/inbox"
+if [ -d "$INBOX_DIR" ]; then
+  NOTES=""
+  for nf in "$INBOX_DIR"/*.json; do
+    [ -f "$nf" ] || continue
+    nid="$(basename "$nf" .json)"
+    nbody="$(jq -r '.body // ""' "$nf" 2>/dev/null | head -n1 || true)"
+    [ -n "$nbody" ] || nbody="(unreadable note — inspect $nf)"
+    NOTES="${NOTES}"$'\n'"  ${nid}  ${nbody}"
+  done
+  if [ -n "$NOTES" ]; then
+    CONTEXT="Undrained inbox notes (captured while you were busy; present them, then \`./scripts/inbox.sh drain --ack <id>\`):${NOTES}"$'\n\n'"${CONTEXT}"
+  fi
+fi
+
+CONTEXT="${CONTEXT}"$'\n'"Use /fleet for everything in flight, /mission-status to inspect, /mission-resume to continue."
 
 jq -n --arg ctx "$CONTEXT" '{
   hookSpecificOutput: {

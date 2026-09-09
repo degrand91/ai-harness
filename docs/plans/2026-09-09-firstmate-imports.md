@@ -1,6 +1,6 @@
 # Plan: harness as central control plane
 
-Status: **Phase 0 built** (branch `phase-0-reliability-floor`). Phases 1–5 awaiting approval.
+Status: **Phase 0 merged** (`aac9b2a`). **Phase 1 built** on `phase-1-control-plane`. Phases 2–5 awaiting approval.
 Revised twice before build (gap review, issue review); see *Review log*.
 Source of borrowed mechanisms: [kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) @ `40c50ea`
 Supersedes: the four-item draft of the same date.
@@ -35,31 +35,36 @@ Four habits from firstmate that are worth more than any single feature:
 4. **Two-layer commands.** One script emits a stable JSON contract; renderers
    consume it and never parse state themselves (`fm-fleet-view.sh:3-5`).
 
-## Host constraint measured during Phase 0
+## Measurement note (corrected)
 
-Process spawning on this machine is **~20-50x slower than typical** — almost
-certainly endpoint security scanning every `exec`:
+An earlier revision of this plan recorded a "host constraint" claiming process
+spawning cost ~200 ms per script on this machine. **That was wrong.** The
+numbers were taken while a `brew install` was saturating the box. Measured on an
+idle machine:
 
-| | cost |
-|---|---|
-| `/bin/echo` | 49 ms |
-| `bash -c 'exit 0'` | 63 ms |
-| an empty `#!/usr/bin/env bash` script | 207 ms |
-| `jq -n 1` | 163 ms |
+| | claimed | actual |
+|---|---|---|
+| `/bin/echo` | 49 ms | **3.2 ms** |
+| `bash -c 'exit 0'` | 63 ms | **3.8 ms** |
+| empty `#!/usr/bin/env bash` script | 207 ms | **6.3 ms** |
+| `jq -n 1` | 163 ms | **4.8 ms** |
 
-Consequences carried into later phases:
+The host is ordinary. Never benchmark against a busy machine.
 
-- **A per-tool-call hook is expensive.** The observer guard (§0.3) was rewritten
-  to spawn zero subshells on the owner path (238 ms ≈ the bare script floor) and
-  narrowed off `Bash` entirely. Crew and watcher enforce the lock inside their
-  own scripts instead, at zero marginal cost.
-- **§1.2's "< 200 ms on 40 missions" is not achievable here** — 40 `jq` calls
-  alone is ~6 s. The snapshot must make **one** `jq` pass over all missions, not
-  one per mission, and the budget is restated as **< 1 s warm**.
-- **Prefer one `ls` over N `stat` calls**, and builtins over subshells, anywhere
-  in a hot path. Both `status-read.sh` and `subagent-stop-record.sh` are written
-  this way, with justified `shellcheck disable` directives.
-- The test suite takes ~35 s locally for this reason and will be much faster in CI.
+Two design decisions were justified with those bad numbers. Both survive on
+their own merits, with corrected reasoning:
+
+- **The observer guard spawns zero subshells on the owner path** and is not
+  matched on `Bash`. At ~6 ms a per-`Bash` hook would in fact have been
+  affordable, but enforcing the lock inside `scripts/crew/*` and
+  `scripts/watch.sh` is still better: those scripts are already running a
+  process, so the check is genuinely free, and the rule lives next to the
+  action it guards.
+- **The snapshot makes ONE `jq` pass over all missions.** Measured on 40
+  fixture files: one invocation **6 ms**, forty invocations **201 ms**. The
+  batch form is 33x better regardless of host speed, and `jq -n 'inputs'` with
+  `input_filename` was verified to attribute each document to the right file.
+  The original **< 200 ms on 40 missions** budget is restored.
 
 ## Layout and state (single owner: this section)
 
@@ -217,8 +222,10 @@ The design note worth copying is `fm-project-mode.sh:5-9`: the resolver answers
 task ship."** Per-task delivery is decided at intake and passed explicitly, so a
 task may deviate with a logged reason instead of silently rewriting the registry.
 
-- `scripts/project-mode.sh` (new) — prints `<mode> <yolo> <path>`; unregistered
-  project is exit 1, never a default. Existing missions' `target_repo` fields are
+- `scripts/project.sh` (new; renamed from the plan's `project-mode.sh`, since it
+  also lists, adds and validates) — `resolve` prints `<mode> <yolo> <path>`;
+  unregistered is exit 1, never a default; malformed is exit 2.
+  `scripts/lib/registry.sh` owns the format. Existing missions' `target_repo` fields are
   matched to the registry by path; an unmatched one is reported, not guessed.
 - `.claude/skills/project/SKILL.md` (new) — `/project add|list|mode`.
 - `protocols/project-registry.md` (new).
@@ -243,14 +250,20 @@ independently. Six chances to drift, and §0.1 proves drift already happened.
   `/fleet` shows it. `config/spend-cap-daily` (USD, optional): when the day's
   roll-up crosses it, `spawn.sh` refuses and files a blocking hold — central
   control over AI development without cost visibility is half a control plane.
-- Budget: **< 1 s warm** on 40 missions, because the Phase 4 watcher polls it
-  every cycle. This requires a SINGLE `jq` pass over every status.json (`jq -s`
-  or a `--args` file list), not one invocation per mission — see the host
-  constraint above. Closed and abandoned missions are skipped on a cheap `jq -r` of one
+- Budget: **< 200 ms** on 40 missions, because the Phase 4 watcher polls it
+  every cycle. Requires a SINGLE `jq` invocation over every status.json, using
+  `jq -n 'inputs'` with `input_filename` to attribute each document to its
+  mission — measured at 6 ms versus 201 ms for per-mission invocations. The
+  suite asserts the timing on a 40-mission fixture. Closed and abandoned missions are skipped on a cheap `jq -r` of one
   field before anything else is read; the test suite asserts the timing on a
   40-mission fixture.
-- Existing six renderers migrate to consume the snapshot. `status.sh` keeps its
-  current output shape so `mission-status/SKILL.md` needs no change.
+- Existing renderers migrate to consume the snapshot. **Done so far:**
+  `status.sh` and `harness-audit.sh` read through `scripts/lib/status-read.sh`,
+  and `fleet.sh` is snapshot-only by construction (its test asserts the source
+  mentions no mission file). **Still outstanding:** `mission-tui.sh`,
+  `mission-html-report.sh`, `mission-diff.sh` and `mission-checkpoint.sh` (734
+  lines, 27 jq sites) still parse `status.json` directly and will misreport a
+  drifted mission. They are a follow-up within Phase 1, not a Phase 2 blocker.
 - `.claude/skills/fleet/SKILL.md` (new) — `/fleet`, the "where is everything"
   answer across all projects.
 
