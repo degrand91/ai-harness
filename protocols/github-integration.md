@@ -1,5 +1,11 @@
 # GitHub Integration Protocol
 
+> **Status: PARTLY IMPLEMENTED.**
+>
+> Implemented: PR creation and CI polling at teardown (`scripts/crew/teardown.sh`,
+> `scripts/pr-poll.sh`), and the crewmate guard that refuses `gh pr merge`.
+> Not implemented: issue-driven mission intake, and the review-comment loop.
+
 This protocol covers three GitHub-specific integration points in the harness:
 issue-driven intake, CI assertion support, and automatic issue closing at
 mission close. All three rely on the `gh` CLI.

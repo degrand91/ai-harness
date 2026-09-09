@@ -12,6 +12,19 @@ These documents define what each agent role is and how it behaves. Read before s
 
 | File | Description |
 |------|-------------|
+Every protocol carries a **Status** banner in its first lines. Four values:
+
+| Status | Meaning |
+|---|---|
+| *(none)* | live — it describes what the code does |
+| `PARTLY IMPLEMENTED` | some of it is real; the banner says which parts |
+| `PARTLY SUPERSEDED` | the reasoning still applies, the mechanics moved |
+| `SUPERSEDED` | replaced; kept only for the thinking it records |
+| `ASPIRATIONAL` | **nothing implements this** |
+
+A specification you cannot tell apart from a description is worse than no
+specification, so check the banner before trusting a file here.
+
 | [orchestrator.md](orchestrator.md) | Orchestrator role: strategic intent, mission state ownership, approval gate, and hard rules |
 | [worker.md](worker.md) | Worker role: single-feature implementation, commit discipline, handoff format |
 | [scrutiny-validator.md](scrutiny-validator.md) | Scrutiny Validator role: adversarial contract-only review, no worker reasoning visible |

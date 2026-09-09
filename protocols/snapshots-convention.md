@@ -1,5 +1,10 @@
 # Protocol: Visual Regression Snapshot Convention
 
+> **Status: ASPIRATIONAL.**
+>
+> **Not implemented.** No visual-regression snapshots are captured or compared.
+> Related and real: [browser-qa.md](browser-qa.md).
+
 This protocol defines how visual regression snapshots are named, stored, and used within the harness.
 
 ---

@@ -1,5 +1,11 @@
 # Protocol: Headless Mode
 
+> **Status: ASPIRATIONAL.**
+>
+> **Not implemented.** No script or hook drives a mission from cron or CI.
+> Note that crewmates are already headless (`claude -p`) — that is unrelated to
+> this document, which is about driving the *orchestrator* without a TTY.
+
 Drive missions from cron jobs, CI pipelines, and shell scripts without an interactive TTY.
 
 ---

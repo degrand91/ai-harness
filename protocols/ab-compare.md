@@ -1,5 +1,11 @@
 # Protocol: A/B Comparison of Paired Mission Post-Mortems
 
+> **Status: ASPIRATIONAL.**
+>
+> **Not implemented.** Nothing measures or compares harness variants.
+> The `tokens` and `cost_usd` fields the snapshot now carries would be the input
+> if this is ever built.
+
 The harness improves over time only if improvement is measured. This protocol compares two structurally similar missions by reading their `post-mortem.md` files and surfacing a structured delta across key axes. The result is a written artifact and, when regressions are found, a proposal for the next planning cycle.
 
 Run this procedure **after** a milestone (v-bump, quarterly review) or on demand from the operator.

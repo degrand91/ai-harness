@@ -1,5 +1,11 @@
 # Protocol: Orchestrator Self-Review at Intake
 
+> **Status: ASPIRATIONAL.**
+>
+> **Not implemented.** The orchestrator does not read its own past performance
+> before planning. The nearest real thing is `learnings/` plus `/stow`'s curation
+> ([knowledge-routing.md](knowledge-routing.md)).
+
 Before scaffolding a plan, the Orchestrator reads its own past performance. This keeps recurring mistakes from compounding across missions and surfaces open proposals that belong in the current scope.
 
 Run this procedure **after** capturing `mission.md` and **before** writing `plan.md`.
