@@ -56,7 +56,12 @@ snap
 assert_eq "false" "$(q '.missions[] | select(.id=="2026-08-04-done") | .active')"
 
 it "orders missions newest-activity first"
-assert_eq "2026-08-04-done" "$(q '.missions[0].id')"
+# Assert the CONTRACT (descending last_activity), not a particular fixture:
+# fixtures written in the same second have no defined relative order, and
+# pinning one is how a test passes by luck until it does not.
+snap
+ordered="$(printf '%s' "$HOOK_OUT" | jq -r '[.missions[].last_activity] | . as $a | ($a == ($a | sort | reverse))')"
+assert_eq "true" "$ordered"
 
 it "reports last activity as an epoch"
 snap
@@ -102,19 +107,21 @@ mkmission "$home" 2026-08-06-empty '{"state":"","status":"in-progress","phase":"
 snap
 assert_eq "executing" "$(q '.missions[] | select(.id=="2026-08-06-empty") | .state')"
 
-it "uses a constant number of jq invocations regardless of fleet size"
-# The point of the layer: 38 independent parse sites became a fixed number of
-# batched passes. What matters is that the count does not grow with the fleet.
-count_jq() {  # <harness-home>
-  local shim log n; shim="$(mktemp -d)"; log="$shim/calls"
-  cat > "$shim/jq" <<SHIM
-#!/usr/bin/env bash
-echo call >> "$log"
-exec $(command -v jq) "\$@"
-SHIM
-  chmod +x "$shim/jq"; : > "$log"
+it "spawns no subprocess per mission at all"
+# The bash implementation batched jq to keep the count constant. The Python one
+# reads the files directly, so the stronger property now holds: reading the
+# fleet costs the same whether it has one mission or forty. Measured by
+# shimming every external tool the old version reached for.
+count_procs() {  # <harness-home>
+  local shim log n; shim="$(mktemp -d)"; log="$shim/calls"; : > "$log"
+  local tool
+  for tool in jq stat git; do
+    printf '#!/bin/sh\necho %s >> %s\nexec /usr/bin/env -i PATH=/usr/bin:/bin %s "$@"\n' \
+      "$tool" "$log" "$tool" > "$shim/$tool"
+    chmod +x "$shim/$tool"
+  done
   CLAUDE_PROJECT_DIR="$1" PATH="$shim:$PATH" "$HARNESS_ROOT/scripts/snapshot.sh" >/dev/null 2>&1
-  n="$(grep -c . "$log" 2>/dev/null || echo 0)"
+  n="$(wc -l < "$log" | tr -d ' ')"
   rm -rf "$shim"
   printf '%s' "$n"
 }
@@ -124,23 +131,19 @@ big="$(mktmphome)"
 for i in $(seq 10 49); do
   mkmission "$big" "2026-08-$i-bulk" '{"state":"executing","features":[]}' >/dev/null
 done
-n_small="$(count_jq "$small")"
-n_big="$(count_jq "$big")"
+n_small="$(count_procs "$small")"
+n_big="$(count_procs "$big")"
 assert_eq "$n_small" "$n_big"
-[ "$n_small" -le 4 ] || _fail "a clean fleet used $n_small jq invocations"
+[ "$n_small" -le 2 ] || _fail "a 1-mission fleet spawned $n_small subprocess(es)"
 
-it "costs exactly one extra pass per corrupt mission, not one per mission"
-# jq aborts the stream at a malformed document, so pass 1 retries without it.
-# The recovery must be proportional to the breakage, never to the fleet size.
+it "a corrupt mission costs nothing extra"
+# The bash version retried a jq pass per corrupt file. Reading files directly
+# means a parse failure is just a None, with no recovery pass to pay for.
 mkdir -p "$big/missions/2026-08-99-corrupt"
 printf 'not json\n' > "$big/missions/2026-08-99-corrupt/status.json"
-n_one_bad="$(count_jq "$big")"
-assert_eq "$(( n_big + 1 ))" "$n_one_bad"
-
 mkdir -p "$big/missions/2026-08-98-corrupt"
 printf '{ also not json\n' > "$big/missions/2026-08-98-corrupt/status.json"
-n_two_bad="$(count_jq "$big")"
-assert_eq "$(( n_big + 2 ))" "$n_two_bad"
+assert_eq "$n_big" "$(count_procs "$big")"
 
 it "still reports every healthy mission when some are corrupt"
 snap_big() {

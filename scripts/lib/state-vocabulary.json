@@ -1,0 +1,34 @@
+{
+  "_comment": "The single owner of mission-state vocabulary. Two implementations read this: scripts/lib/status-read.sh (bash, for hooks in hot paths) and scripts/lib/harness.py (for batch readers). tests/state-vocabulary.test.sh asserts they agree on every entry, so the rule has one owner even though the lookup has two.",
+  "canonical": [
+    "intake", "planning", "contract", "awaiting_approval",
+    "executing", "feature_loop", "closing", "closed", "abandoned", "paused"
+  ],
+  "terminal": ["closed", "abandoned"],
+  "from_phase": {
+    "feature-loop": "executing",
+    "feature_loop": "executing",
+    "planning": "planning",
+    "intake": "intake",
+    "contract": "contract",
+    "closing": "closing"
+  },
+  "from_status": {
+    "in-progress": "executing",
+    "in_progress": "executing",
+    "active": "executing",
+    "executing": "executing",
+    "complete": "closed",
+    "completed": "closed",
+    "done": "closed",
+    "closed": "closed",
+    "abandoned": "abandoned",
+    "cancelled": "abandoned",
+    "canceled": "abandoned",
+    "paused": "paused",
+    "on-hold": "paused",
+    "on_hold": "paused",
+    "awaiting-approval": "awaiting_approval",
+    "awaiting_approval": "awaiting_approval"
+  }
+}
