@@ -28,6 +28,21 @@ GH
 chmod +x "$stubdir/gh"
 export GH_LOG
 
+# Drop only the PATH entries that provide a given tool, keeping everything else
+# teardown needs. Hard-coding a minimal PATH is not portable: gh lives in
+# /opt/homebrew/bin on macOS but in /usr/bin on Ubuntu, where a minimal
+# "/usr/bin:/bin" still finds it and the test silently checks nothing.
+path_without() {  # <tool>
+  local out="" d
+  IFS=: read -ra _dirs <<< "$PATH"
+  for d in "${_dirs[@]}"; do
+    [ -n "$d" ] || continue
+    [ -x "$d/$1" ] && continue
+    out="$out:$d"
+  done
+  printf '%s' "${out#:}"
+}
+
 crew() {
   local s="$1"; shift
   local outf; outf="$(mktemp)"
@@ -109,7 +124,7 @@ it "fails loudly when gh is missing, having pushed the branch"
 # operator has to open the PR by hand.
 work D003 pr-proj direct-PR
 outf="$(mktemp)"; HOOK_RC=0
-CLAUDE_PROJECT_DIR="$home" HARNESS_CREW_BACKEND=fake PATH="/usr/bin:/bin" \
+CLAUDE_PROJECT_DIR="$home" HARNESS_CREW_BACKEND=fake PATH="$(path_without gh)" \
   "$HARNESS_ROOT/scripts/crew/teardown.sh" D003 >"$outf" 2>&1 || HOOK_RC=$?
 HOOK_OUT="$(cat "$outf")"; rm -f "$outf"
 assert_rc 1 "$HOOK_RC"
