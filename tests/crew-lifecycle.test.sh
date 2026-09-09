@@ -176,4 +176,20 @@ assert_contains "$HOOK_OUT" "delivery failed"
 assert_file_exists "$home/state/F001.close-pending"
 [ -d "$home/data/worktrees/alpha/F001" ] || _fail "worktree removed despite failed delivery"
 
+it "a launch that fails leaves the same state as one never attempted"
+# Otherwise the next spawn refuses with "already exists and has finished" and
+# the operator must --abandon a crewmate that never started.
+mkbrief F800 direct-PR
+before_wt="$(git -C "$proj" worktree list | wc -l | tr -d ' ')"
+CLAUDE_PROJECT_DIR="$home" HARNESS_CREW_BACKEND=nosuchbackend \
+  "$HARNESS_ROOT/scripts/crew/spawn.sh" m1 F800 --project alpha --mode direct-PR --yolo off >/dev/null 2>&1
+assert_file_missing "$home/state/F800.meta"
+[ ! -d "$home/data/worktrees/alpha/F800" ] || _fail "worktree left behind by a failed launch"
+assert_eq "$before_wt" "$(git -C "$proj" worktree list | wc -l | tr -d ' ')"
+
+it "and the task can simply be spawned again"
+crew spawn.sh m1 F800 --project alpha --mode direct-PR --yolo off
+assert_rc 0 "$HOOK_RC"
+crew teardown.sh F800 --abandon >/dev/null 2>&1
+
 finish

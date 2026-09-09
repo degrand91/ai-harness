@@ -44,7 +44,17 @@ The plan and contract are drafted through conversation, and approval is the one 
 ./scripts/inbox.sh note "check the flaky login test"
 ```
 
-Slash-skills for the same, in-session: `/fleet` `/crew` `/decide` `/inbox` `/project` `/afk` `/pause` `/resume` `/stow`, plus the mission set (`/mission-start`, `/mission-status`, `/mission-resume`, `/mission-list`, `/mission-review`).
+Slash-skills for the same, in-session:
+
+| | |
+|---|---|
+| Run work | `/mission-start` `/dispatch` `/crew` `/mission-status` `/mission-resume` `/mission-list` `/mission-review` |
+| Decide and capture | `/decide` `/inbox` `/project` `/fleet` |
+| Step away | `/afk` `/pause` `/resume` |
+| Remember | `/stow` |
+| Used by the orchestrator, rarely by you | `/scaffold-feature` `/contract-check` `/explore` `/log` `/browser-qa` `/integrations` `/skill-stocktake` |
+
+`/dispatch` is the one that puts a feature into execution — it resolves the execution model, refuses when a decision is open or the concurrency limit is reached, and does the whole job under `crew`.
 
 Everything is a file. Kill the session at any point; the next one reconciles from disk.
 
@@ -92,8 +102,8 @@ Registered per project in `data/projects.md`:
 | `.claude/agents/` | orchestrator, validators, explorer, scout |
 | `.claude/skills/` | the slash-skills listed above |
 | `.claude/hooks/` | session lock, status injection, turn-end guard, watcher re-arm, compaction carry, spawn serialisation |
-| `scripts/` | `doctor` `project` `snapshot` `fleet` `inbox` `hold` `watch` `afk` `notify` `lease` `memory-budget` `learnings-curate` |
-| `scripts/crew/` | `brief` `spawn` `run` `say` `peek` `send` `attach` `reconcile` `teardown` + backends |
+| `scripts/` | you run these: `doctor` `project` `fleet` `inbox` `hold` `feature-dispatch` `learnings-curate` `lint`. Machinery: `snapshot` `watch` `afk` `notify` `lease` `memory-budget` `pr-poll` `status` `harness-audit` `learnings-index`, plus the per-mission renderers (`mission-tui` `mission-diff` `mission-checkpoint` `mission-html-report`) |
+| `scripts/crew/` | lifecycle: `brief` `spawn` `run` `teardown` `reconcile`. Supervision: `peek` `send` `attach`. Crewmate-side: `say` (its only way to report) `guard-pretool` (the sandbox that fires regardless of permission mode) `render` `allowlist`. Plus the tmux and fake backends |
 | `scripts/lib/` | single owners: `status-read` `registry` `holds` `crew` `session-lock` |
 | `tests/` | dependency-free suite — `bash`, `jq`, coreutils, no framework |
 | `missions/` · `data/` · `state/` · `config/` | local state, all gitignored |
@@ -114,7 +124,7 @@ Four roots, none of them tracked:
 ## Testing
 
 ```sh
-./tests/run.sh              # 26 files, ~354 assertions
+./tests/run.sh              # the whole suite  (--list to see what it covers)
 ./scripts/lint.sh           # shellcheck
 ./scripts/harness-audit.sh  # repo self-check
 ```

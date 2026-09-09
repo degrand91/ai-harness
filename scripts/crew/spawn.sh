@@ -66,6 +66,21 @@ MDIR="$HARNESS_ROOT/missions/$MISSION"
 BRIEF="$MDIR/briefs/$TASK.md"
 [ -f "$BRIEF" ] || die "spawn.sh: no brief at $BRIEF — run scripts/crew/brief.sh first"
 
+# --- 0. today's spend ---------------------------------------------------------
+# A cap is the only thing that stops a runaway before it becomes a bill. It
+# REFUSES and FILES A DECISION rather than merely failing: an operator who set a
+# cap wants to be asked, not to find work quietly stopped.
+# shellcheck source=../lib/spend.sh
+. "$CODE_ROOT/scripts/lib/spend.sh"
+if spend_over_cap "$HARNESS_ROOT"; then
+  _cap="$(spend_cap "$HARNESS_ROOT")"; _today="$(spend_today "$HARNESS_ROOT")"
+  "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
+    --question "Today's crew spend is \$$_today, at or over the \$$_cap daily cap. Raise it, or stop for today?" \
+    --options "raise the cap,stop for today" \
+    --recommend "stop unless this task is time-critical — the cap was set for a reason" >/dev/null 2>&1 || true
+  die "spawn.sh: today's spend (\$$_today) has reached the daily cap (\$$_cap). A decision has been filed; answer it with /decide, or raise config/spend-cap-daily."
+fi
+
 # --- 0a. is this task already in flight? ------------------------------------
 # Checked before the concurrency limit, because "you already spawned this exact
 # task" tells the caller far more than "you are at the limit".
@@ -200,8 +215,15 @@ crew_ledger_append "$HARNESS_ROOT" "$TASK" started "worktree $WORKTREE on $BRANC
 
 LOG="$HARNESS_ROOT/state/$TASK.window.log"
 if ! backend_open "$TASK" "$WORKTREE" "$LOG" "$CODE_ROOT/scripts/crew/run.sh" "$HARNESS_ROOT" "$TASK"; then
-  crew_ledger_append "$HARNESS_ROOT" "$TASK" failed "could not open a session window"
-  die "spawn.sh: could not open a window for $TASK (backend: ${HARNESS_CREW_BACKEND:-tmux})" 1
+  # ROLL BACK. Nothing ran, so leaving a worktree and a meta record behind would
+  # make the next spawn refuse ("already exists and has finished") and force a
+  # manual --abandon for a crewmate that never started. A launch that failed
+  # should leave the same state as one never attempted.
+  git -C "$PROJ_PATH" worktree remove --force "$WORKTREE" >/dev/null 2>&1 || rm -rf "$WORKTREE"
+  git -C "$PROJ_PATH" worktree prune >/dev/null 2>&1 || true
+  git -C "$PROJ_PATH" branch -D "$BRANCH" >/dev/null 2>&1 || true
+  crew_forget "$HARNESS_ROOT" "$TASK"
+  die "spawn.sh: could not open a window for $TASK (backend: ${HARNESS_CREW_BACKEND:-tmux}). Nothing was launched and the worktree has been removed." 1
 fi
 
 printf 'Spawned %s on %s [%s yolo=%s model=%s]\n  worktree: %s\n  branch:   %s\n' \

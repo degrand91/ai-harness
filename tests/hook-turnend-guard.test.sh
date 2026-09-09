@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
-# Tests for .claude/hooks/stop-no-red-status.sh — the Stop guard.
+# Tests for .claude/hooks/stop-turnend-guard.sh — the Stop guard.
 # Exit 0 = allow the session to end. Exit 2 = block, reason on stderr.
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/fixtures.sh"
 
-HOOK=stop-no-red-status.sh
+HOOK=stop-turnend-guard.sh
 PAYLOAD='{"hook_event_name":"Stop"}'
 
-# Age a mission's status.json so the stuck-feature age check can be exercised.
-age_mission() {  # <mission-dir> <seconds-ago>
-  local dir="$1" secs="$2" stamp
-  if date -u -d "@0" >/dev/null 2>&1; then
-    stamp="$(date -u -d "@$(( $(date +%s) - secs ))" +%Y%m%d%H%M.%S)"   # GNU
-  else
-    stamp="$(date -u -r "$(( $(date +%s) - secs ))" +%Y%m%d%H%M.%S)"     # BSD
-  fi
-  touch -t "$stamp" "$dir/status.json" "$dir/log.md"
-}
+# Relative mtimes come from fixtures.sh, which makes them explicit rather than
+# leaving them to whatever order the filesystem happened to produce.
+age_mission() { age_mission_by "$1" "$2"; }
 
 home="$(mktmphome)"
 

@@ -24,7 +24,7 @@ Native Claude Code integration for the harness. Everything in here is a real Cla
 │   └── log/
 ├── hooks/                 # lifecycle enforcement
 │   ├── post-write-mission-state.sh   — auto-append mission log on edits
-│   ├── stop-no-red-status.sh         — block session end if any mission is red
+│   ├── stop-turnend-guard.sh         — block session end if any mission is red
 │   ├── session-start-inject-status.sh — surface active mission on session open
 │   └── subagent-stop-record.sh       — record subagent finish events
 └── agent-memory/          # auto-created by Claude Code as orchestrator builds memory
@@ -56,7 +56,7 @@ Only the Orchestrator has `memory: project`. Workers and Validators are delibera
 | Hook | Event | What it does | Block? |
 |------|-------|--------------|--------|
 | `post-write-mission-state.sh` | `PostToolUse:Write\|Edit` | Appends `[ts] state mutation — <path>` to the active mission's `log.md` if the edited file is under `missions/<id>/`. Idempotent enough. | No |
-| `stop-no-red-status.sh` | `Stop` | Refuses to end the session if any mission has red features without follow-ups. Exit 2 + stderr message. | **Yes** |
+| `stop-turnend-guard.sh` | `Stop` | Refuses to end the session if any mission has red features without follow-ups. Exit 2 + stderr message. | **Yes** |
 | `session-start-inject-status.sh` | `SessionStart` | Injects the active mission's status into context (mission id, state, current feature, last 5 log lines). | No |
 | `subagent-stop-record.sh` | `SubagentStop` | Logs subagent type + timestamp to the active mission's log. Feeds the post-mortem cost aggregation. | No |
 
