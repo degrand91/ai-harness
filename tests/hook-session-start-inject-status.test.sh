@@ -124,4 +124,26 @@ CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/hold.sh" answer 2026-01-01-alp
 run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
 assert_not_contains "$(ctx)" "Merge PR 42?"
 
+# --- crew ------------------------------------------------------------------
+it "surfaces a blocked crewmate, and does not mention one that is working"
+. "$HARNESS_ROOT/scripts/lib/crew.sh"
+crew_meta_write "$home" C-BLOCK project=p mission=2026-01-01-alpha feature=C-BLOCK
+crew_ledger_append "$home" C-BLOCK blocked "needs a credential"
+crew_meta_write "$home" C-WORK project=p mission=2026-01-01-alpha feature=C-WORK runner_pid=$$
+crew_ledger_append "$home" C-WORK progress "going fine"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+c="$(ctx)"
+assert_contains "$c" "C-BLOCK"
+assert_contains "$c" "needs a credential"
+assert_not_contains "$c" "C-WORK"
+
+it "flags a crewmate whose runner vanished without an outcome"
+crew_meta_write "$home" C-GONE project=p mission=2026-01-01-alpha feature=C-GONE runner_pid=999999
+crew_ledger_append "$home" C-GONE progress "was going fine"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_contains "$(ctx)" "SUSPICIOUS"
+
+it "still emits valid JSON with crew state present"
+printf '%s' "$HOOK_OUT" | jq -e . >/dev/null 2>&1; assert_rc 0 $?
+
 finish

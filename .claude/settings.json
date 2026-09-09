@@ -67,7 +67,11 @@
       "Skill(inbox)",
       "Bash(./scripts/hold.sh *)",
       "Bash(./scripts/lib/holds.sh *)",
-      "Skill(decide)"
+      "Skill(decide)",
+      "Bash(./scripts/crew/*)",
+      "Bash(./scripts/pr-poll.sh *)",
+      "Bash(git worktree list*)",
+      "Skill(crew)"
     ],
     "deny": [
       "Bash(rm -rf /)",

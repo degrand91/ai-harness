@@ -99,6 +99,30 @@ if [ -d "$INBOX_DIR" ]; then
   fi
 fi
 
+# Crewmates that need attention: blocked, finished, or vanished. A crewmate
+# still working is deliberately NOT reported — nothing is required of the
+# session, and naming it invites an interruption to "check on it".
+CREW_TEXT=""
+if . "$CODE_ROOT/scripts/lib/crew.sh" 2>/dev/null; then
+  while IFS= read -r ctask; do
+    [ -n "$ctask" ] || continue
+    clast="$(crew_ledger_last "$HARNESS_ROOT" "$ctask" 2>/dev/null || true)"
+    case "$clast" in
+      blocked|done|failed)
+        CREW_TEXT="${CREW_TEXT}"$'\n'"  ${ctask}: ${clast} — $(crew_ledger_note "$HARNESS_ROOT" "$ctask" 2>/dev/null || true)" ;;
+      *)
+        cpid="$(crew_meta_get "$HARNESS_ROOT" "$ctask" runner_pid 2>/dev/null || true)"
+        case "$cpid" in
+          ''|*[!0-9]*) CREW_TEXT="${CREW_TEXT}"$'\n'"  ${ctask}: no runner recorded — reconcile before trusting it" ;;
+          *) kill -0 "$cpid" 2>/dev/null || CREW_TEXT="${CREW_TEXT}"$'\n'"  ${ctask}: runner gone with no outcome — SUSPICIOUS, peek before tearing down" ;;
+        esac ;;
+    esac
+  done < <(crew_list "$HARNESS_ROOT" 2>/dev/null)
+fi
+if [ -n "$CREW_TEXT" ]; then
+  CONTEXT="CREWMATES NEEDING ATTENTION (./scripts/crew/reconcile.sh for the full picture):${CREW_TEXT}"$'\n\n'"${CONTEXT}"
+fi
+
 # OPEN DECISIONS COME FIRST, ahead of everything. Each block below PREPENDS
 # to CONTEXT, so this one runs LAST to end up on top. They are questions the captain
 # has already been asked and has not answered; presenting work before them is how
