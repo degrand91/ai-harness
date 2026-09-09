@@ -1,5 +1,10 @@
 # Architecture
 
+> Sections 2, 5 and 9 were revised when the crew execution model landed. If this
+> document and [protocols/](protocols/) ever disagree, the protocols win: they
+> sit next to the code and are what the orchestrator actually loads.
+
+
 The harness is a thin protocol layer on top of Claude Code that adopts the Factory.ai Missions model: **one Orchestrator, many short-lived Workers, adversarial Validators**, glued together by a **validation contract** written before any code is.
 
 This document is the design reference. For how to *operate* it, see [CLAUDE.md](CLAUDE.md).
@@ -22,46 +27,47 @@ The harness composes **#1, #2, #4, #5**. It deliberately omits #3.
 
 ## 2. The three roles
 
-```
-                  ┌─────────────────────────────────────┐
-                  │            ORCHESTRATOR             │
-                  │ Plans features, milestones, and the │
-                  │         validation contract         │
-                  └──────────────┬──────────────────────┘
-                                 │
-                ┌────────────────┴────────────────┐
-                ▼                                 ▼
-       ┌───────────────────┐            ┌────────────────────┐
-       │      WORKERS      │            │     VALIDATORS     │
-       │ Fresh context per │            │ Adversarial. Have  │
-       │ feature.          │            │ never seen the     │
-       │ Implement, commit │            │ code before.       │
-       │ via git, hand off.│            │                    │
-       └───────────────────┘            └────────────────────┘
-```
-
 ### Orchestrator (you, the main Claude session)
-- Reads the mission spec + accumulated `learnings/`.
-- Decomposes the goal into ordered features.
-- Writes the **validation contract** before any code is written.
-- Waits at the one mandatory human gate (plan + contract approval).
-- Spawns Workers and Validators, never implements features itself.
-- Owns `status.json` and `log.md` (broadcast).
-- Decides whether to open a follow-up feature when validation fails (negotiation).
 
-### Workers (short-lived subagents, one per feature)
-- Receive: feature spec + relevant contract slice + handoff from previous feature (if any).
-- Operate with **fresh context** — they do not see the orchestrator's chat or earlier worker reasoning.
-- Inherit the codebase via git, not via memory.
-- Implement, run tests, commit, return a structured handoff.
+Plans features and milestones, writes the validation contract before any code
+exists, dispatches work, decides, and lands finished work. **It never edits
+application files.**
+
+### Workers — one of two execution models
+
+A mission records `execution` in `status.json`, decided once at intake and never
+changed afterwards. [protocols/feature-loop.md](protocols/feature-loop.md) owns
+the decision; `scripts/feature-dispatch.sh` implements it.
+
+| | `crew` | `subagent` |
+|---|---|---|
+| The worker is | a headless `claude -p` process in its own git worktree | a short-lived in-process `Agent` call |
+| The orchestrator, meanwhile | **free** — it can answer you and watch other projects | **blocked** inside the tool call for the whole duration |
+| Requires | the `target_repo` to be a registered project | nothing |
+| Survives a session death | yes: worktree and ledger reconcile from disk | no |
+| Reports through | an append-only ledger it writes itself | the Agent tool's return value |
+
+**Registration decides the default.** Registering a project
+(`scripts/project.sh add`) is the operator's explicit act and carries the
+delivery posture the crew needs, so a registered `target_repo` means `crew`.
+
+The `crew` model is what makes this a control plane rather than a tool that runs
+one thing at a time: with in-process subagents the controller is blocked for the
+entire duration of any work it dispatches, and a controller that cannot answer
+you while work is happening is not a control plane.
+
+**This is not parallelism.** `crew.max_concurrent` ships at **1**. Crew separates
+*"its own process"* from *"at the same time"*; only the first is new. See §5.
 
 ### Validators (short-lived subagents, never see implementer reasoning)
-- **Scrutiny Validator** — runs lint/typecheck/test, performs code review, checks contract assertions one by one.
-- **User-Testing Validator** — launches the app, exercises flows like a QA engineer via Playwright MCP browser tools (navigate, click, fill, screenshot). Configured in `.mcp.json`. See [protocols/browser-qa.md](protocols/browser-qa.md).
-- Sees: the validation contract and the diff. Does **not** see the worker's reasoning or handoff narrative.
-- Returns a verdict: green / red / red-with-followup-spec.
 
----
+Adversarial by design. They receive the contract slice and the diff, and run
+**against the live worktree before teardown** — teardown removes the very thing
+they need to read.
+
+Under `crew` their isolation stops being a convention and becomes structural: the
+worker is a separate OS process, so its reasoning is physically out of reach
+rather than merely unpasted.
 
 ## 3. The validation contract
 
@@ -128,6 +134,12 @@ See [protocols/validation-contract.md](protocols/validation-contract.md) and [te
 
 ## 5. Serial execution
 
+> **Crew did not change this rule.** It separates *running as its own process*
+> from *running at the same time as another worker* — only the first is new.
+> `crew.max_concurrent` ships at 1 and `scripts/crew/spawn.sh` refuses to exceed
+> it. Everything below still holds.
+
+
 Features execute one at a time. Workers do not run concurrently. The next worker inherits the codebase from the previous worker **via git**.
 
 Parallelism is allowed only for **non-conflicting, read-only work**:
@@ -184,6 +196,12 @@ See [protocols/model-routing.md](protocols/model-routing.md). The Agent tool acc
 ---
 
 ## 9. State, files, and the "harness" boundary
+
+> **Local state now lives in four roots, none of them tracked:** `missions/`
+> (specs, contracts, features, handoffs, decisions), `data/` (project registry,
+> inbox, crew worktrees), `state/` (task meta and ledgers, locks, epochs,
+> digests), `config/` (operator choices). See the README's "Local state" table.
+
 
 The harness has **no runtime of its own**. It is:
 - Markdown protocols Claude reads on entry (via [CLAUDE.md](CLAUDE.md)).

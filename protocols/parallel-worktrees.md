@@ -1,5 +1,12 @@
 # Protocol: Parallel Worktree Execution
 
+> **Status: SUPERSEDED.**
+>
+> Superseded by [crew.md](crew.md), which is how worktree isolation actually works now:
+> a crewmate is a separate process in its own worktree, always — not an opt-in mode.
+> The concurrency this document describes remains **banned**; see [serial-execution.md](serial-execution.md).
+> Kept for the dependency-graph reasoning, which still applies if the limit is ever raised.
+
 Serial execution is the default. This protocol describes the **opt-in** extension that allows independent features to run concurrently via git worktrees. Read [serial-execution.md](serial-execution.md) first — every rule there still applies unless explicitly overridden here.
 
 ---

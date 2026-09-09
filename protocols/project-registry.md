@@ -62,4 +62,15 @@ Everything else in the file is prose and is ignored, so the file stays hand-edit
 
 Exit codes are the contract: `0` resolved · `1` not registered · `2` refused.
 
+## What a crewmate costs
+
+Measured on this machine: a **trivial** `haiku` crewmate turn cost **$0.05**, and
+a small real feature **$0.07**. Every launch pays for the system prompt, the
+global `CLAUDE.md`, and hook context before it does any work.
+
+So the floor per crewmate is *cents, not fractions of a cent*. Set
+`config/spend-cap-daily` against that number rather than against per-token
+intuition — `scripts/snapshot.sh` rolls real spend up per mission and per day
+from what each crewmate actually reported.
+
 See also [knowledge-routing.md](knowledge-routing.md) for where facts about a project belong.

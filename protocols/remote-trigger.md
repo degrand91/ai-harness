@@ -1,5 +1,12 @@
 # Protocol: Remote Trigger
 
+> **Status: PARTLY SUPERSEDED.**
+>
+> Escalation policy now lives in [afk.md](afk.md) and delivery in `scripts/notify.sh`.
+> What is still current here: the *reasoning* about when to surface to the operator
+> versus continue. What is not: the trigger mechanics, which the watcher owns
+> ([continuity.md](continuity.md)).
+
 Define exactly when the Orchestrator surfaces to the user (fires a notification) versus continues autonomously. Surfacing is a high-cost event — it breaks the operator's attention. This protocol keeps surfacing rare and intentional.
 
 ---

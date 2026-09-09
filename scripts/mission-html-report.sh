@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# NOTE: this renders ONE mission in detail. For the fleet, use
+# scripts/fleet-html.sh, which reads the snapshot contract instead of parsing
+# mission files. The two are not redundant — this one shows per-feature files
+# and full markdown bodies that the fleet snapshot deliberately does not carry —
+# but if you only want "what is happening", reach for fleet-html.sh.
 set -euo pipefail
 
 CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
