@@ -48,26 +48,50 @@ In order:
 - Cover: behavior, structure (file invariants), performance budgets if relevant, security checks.
 
 ### Approval gate
+- **File the decision before asking it**: `hold.sh open <mission> --question "Approve this plan and contract?"`. Approval is `DH-000`, a decision on disk, so it survives a restart or a compaction ([decision-hold.md](decision-hold.md)).
 - Present `plan.md` and `contract.md` to the user.
-- Wait for explicit "approved" before spawning any Worker.
+- Wait for explicit "approved" before dispatching any feature. Record the answer with `hold.sh answer`, then set `executing`.
 - This is the **only** mandatory human gate.
 
 ### Feature loop
-For each feature in order:
-1. Update `status.json`: `current_feature = NNN`.
-2. Append to `log.md`: `[ts] feature NNN started`.
-3. Spawn a Worker subagent via the Agent tool with `subagent_type: "worker"`. The system prompt is loaded automatically from [.claude/agents/worker.md](../.claude/agents/worker.md). Pass only the feature-specific task:
-   - The feature `spec.md`.
-   - The contract slice it must satisfy.
-   - The previous feature's handoff (if any).
-4. Receive the Worker's return value. Persist it at `features/NNN/handoff.md`. Validate it has all required sections (see [handoff.md](handoff.md)). If not, re-spawn.
-5. Spawn a Scrutiny Validator subagent via the Agent tool with `subagent_type: "scrutiny-validator"` ([.claude/agents/scrutiny-validator.md](../.claude/agents/scrutiny-validator.md)). It only sees the contract slice + the diff.
-   - **Scrutiny model routing**: default to Sonnet for the scrutiny-validator spawn. Use Haiku only if every assertion in the contract slice is purely mechanical (shell exit codes, fixed grep). See [protocols/model-routing.md](model-routing.md#scrutiny-model-selection).
-6. If the feature has user-observable behavior, spawn a User-Testing Validator.
-7. Decide:
-   - All verdicts green → mark feature done, update `status.json`, advance.
-   - Any verdict red → open a **follow-up feature** (`features/NNN-followup-...`). Do not patch the existing feature in place.
-8. Append to `log.md`.
+
+[feature-loop.md](feature-loop.md) owns this in full, under both execution
+models. The Orchestrator's part:
+
+1. **Dispatch one feature** with `scripts/feature-dispatch.sh` (`/dispatch`).
+   Never dispatch by hand: that script owns the refusals — not executing, a
+   blocking decision open, the feature not pending, the concurrency limit
+   reached, the project unregistered — and each refusal names what to do instead.
+   - `execution: crew` → it renders the brief, creates the worktree, injects the
+     hooks, launches, and marks the feature `in_progress`. **You are then free.**
+     Do not poll; the watcher wakes you when the ledger moves.
+   - `execution: subagent` → it prints the spawn spec and stops, because bash
+     cannot call the Agent tool. Spawn `subagent_type: "worker"` with that spec
+     yourself and mark the feature `in_progress`.
+
+2. **Read the outcome from the crewmate, not from the process.** `crew_outcome`
+   returns `done`, `failed` or `blocked`, ignoring the `idle:`/`exited:` lines
+   the lifecycle hooks append afterwards. `blocked` is **not** terminal: file the
+   decision, get an answer, steer the same crewmate, do not tear down.
+
+3. **Validate against the live worktree**, before teardown. Spawn the Scrutiny
+   Validator (`subagent_type: "scrutiny-validator"`), and the User-Testing
+   Validator if the feature is user-observable. They see the contract slice and
+   the diff — never the worker's reasoning, which under `crew` is physically out
+   of reach.
+   - **Scrutiny model routing**: default Sonnet. Haiku only when every assertion
+     in the slice is purely mechanical. See [model-routing.md](model-routing.md#scrutiny-model-selection).
+   - Point them at `crew_meta_get <home> <task> worktree`. **Teardown removes
+     the very thing they need to read.**
+
+4. **Decide.**
+   - All green → `teardown.sh` (which lands the work under the recorded delivery
+     mode), mark the feature closed, advance.
+   - Red → **re-brief the same crewmate on the same branch** by appending a
+     `## Followup` to its brief; it already has the context. Open a separate
+     follow-up feature only when the work is genuinely separate.
+
+5. Append to `log.md`.
 
 ### Negotiation on failure
 - A red verdict is not failure; it is a renegotiation event.

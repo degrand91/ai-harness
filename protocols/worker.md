@@ -1,5 +1,12 @@
 # Protocol: Worker
 
+> **Scope: the `subagent` execution model only.**
+>
+> Under `execution: crew` a worker is a headless process in its own worktree and
+> its instructions are the *brief*, not this file — see [crew.md](crew.md) and
+> [feature-loop.md](feature-loop.md). This document still governs the in-process
+> path, which is used when a mission's `target_repo` is not a registered project.
+
 A Worker is a short-lived Claude Code subagent that implements exactly one feature.
 
 ## Identity

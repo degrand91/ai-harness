@@ -806,9 +806,16 @@ spawn lock. Needed the moment two missions target one repo.
 - `scripts/lease.sh` (new); `pre-agent-spawn-serial.sh` and `crew/spawn.sh` both
   migrate onto it, so in-process and crew spawns share one arbiter.
 
-### 5.4 — Retire the in-process worker
-Once every mission recorded `execution: "subagent"` is closed, delete
-`.claude/agents/worker.md`; the brief template is the only worker definition.
+### 5.4 — Retire the in-process worker — WITHDRAWN
+The original condition ("once every mission recording `execution: subagent` is
+closed") was **vacuous**: nothing ever set `execution` at all, so it could never
+fire, and both paths would have lived forever with no way to tell which was
+real.
+
+It is also the wrong goal. The subagent path is the correct fallback for a
+project that is not registered, and `feature-dispatch.sh` selects between the
+two deliberately. `protocols/worker.md` now states its scope in its first
+paragraph. Two documented models beat one model and one ghost.
 
 ### 5.5 — Fleet dashboard (optional)
 `scripts/fleet-html.sh` renders the §1.2 snapshot to one static page — projects,
