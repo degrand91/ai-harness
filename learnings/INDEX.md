@@ -11,6 +11,7 @@
 - [contract-defect-amend-not-patch](patterns/contract-defect-amend-not-patch.md) — When the integration check (or a validator) surfaces a defect in the contract itself — not in the code — amend the contract through its amendments log and re-run. Do not paper over with a "the intent was clear" pass. (from `2026-05-23-ship-v0-3-multi-provider`)
 - [ledger-first-over-process-state](patterns/ledger-first-over-process-state.md) — A crewmate's own terminal report outranks whether its process is still running; deciding on process liveness alone blocks work that is demonstrably complete. (from `2026-09-09-fleet-shows-crew`)
 - [recursive-mission-stability-guards](patterns/recursive-mission-stability-guards.md) — When a mission edits the harness itself (recursive mission), every feature's contract slice must include guards that the still-in-use agent files (especially scrutiny-validator.md) remain parseable and byte-unmodified. (from `2026-05-23-ship-v0-3-multi-provider`)
+- [run-the-loop-to-its-boundary](patterns/run-the-loop-to-its-boundary.md) — A supervision loop's defects live at its edges — expiry, handover, the gap after it stops — and single-tick tests cannot reach them; run it to its deadline on a compressed clock. (from `2026-09-09-close-open-items`)
 - [sanity-check-settings-deny-at-intake](patterns/sanity-check-settings-deny-at-intake.md) — At mission intake, scan .claude/settings.json `permissions.deny` for overbroad globs that would block mandatory mission artifacts. (from `2026-05-23-add-marker2`)
 
 ## Anti-patterns
