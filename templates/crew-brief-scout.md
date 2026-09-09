@@ -1,6 +1,8 @@
 # Scout brief: {TASK_ID}
 
-Ledger: {LEDGER_PATH}
+Report progress with:
+  {SAY_CMD} {LEDGER_PATH} <verb> "<note>"
+  verbs: progress · blocked · done · failed
 Report: {HANDOFF_PATH}
 Worktree: {WORKTREE}
 Branch:  {BRANCH}
@@ -26,8 +28,8 @@ mode={MODE} yolo={YOLO} model={MODEL}
 
 ## Protocol
 
-- Append `progress:` lines to the ledger as you learn things, and `blocked:` if
-  you need a decision to continue.
-- Finish with exactly one `done:` line naming the report path, then stop.
+- Report with the command above as you learn things, and `blocked` if you need
+  a decision. It is the ONLY way to reach your supervisor.
+- Finish with exactly one `done` naming the report path, then stop.
 - No commit, no branch, no PR. Your branch is discarded at teardown; only the
   report survives.

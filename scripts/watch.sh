@@ -69,10 +69,10 @@ crew_event() {
   local t last
   while IFS= read -r t; do
     [ -n "$t" ] || continue
-    last="$(crew_ledger_last "$HARNESS_ROOT" "$t")"
+    last="$(crew_outcome "$HARNESS_ROOT" "$t" 2>/dev/null || true)"
     case "$last" in
       done|failed|blocked)
-        printf '%s %s %s' "$t" "$last" "$(crew_ledger_note "$HARNESS_ROOT" "$t")"
+        printf '%s %s %s' "$t" "$last" "$(crew_outcome_note "$HARNESS_ROOT" "$t")"
         return 0 ;;
     esac
   done < <(crew_list "$HARNESS_ROOT")

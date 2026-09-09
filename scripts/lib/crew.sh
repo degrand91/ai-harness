@@ -27,11 +27,16 @@
 # Usage (sourced):
 #   crew_meta_write <home> <task> k=v...     create or replace the meta record
 #   crew_meta_set   <home> <task> <k> <v>    update one field
+#   crew_meta_set_json <home> <task> <k> <json>  update one field to raw JSON
 #   crew_meta_get   <home> <task> <k>        read one field (1 = no such task)
 #   crew_list       <home>                   live task ids
 #   crew_count      <home>                   how many live tasks
 #   crew_ledger_append <home> <task> <verb> [note]
 #   crew_ledger_last   <home> <task>         last COMPLETE line's verb
+#   crew_outcome       <home> <task>         last done|failed|blocked (ignores
+#                                            the lifecycle lines hooks append
+#                                            AFTER the crewmate reports)
+#   crew_outcome_note  <home> <task>         that outcome's note
 #   crew_ledger_note   <home> <task>         that line's note
 #   crew_is_terminal   <home> <task>         0 = done|failed
 #   crew_forget     <home> <task>            drop both files
@@ -72,6 +77,19 @@ crew_meta_set() {
   [ -f "$f" ] || return 1
   local tmp; tmp="$(mktemp "${f}.XXXXXX")" || return 1
   jq --arg k "$k" --arg v "$v" '.[$k] = $v' "$f" > "$tmp" 2>/dev/null || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
+}
+
+# Set a field to a raw JSON value (an array, an object, a number). crew_meta_set
+# writes strings; a tool allowlist is a list, and flattening it to a string is
+# what forced a space-split that broke every multi-word pattern.
+crew_meta_set_json() {
+  local home="${1:?}" task="${2:?}" k="${3:?}" json="${4:?}"
+  _crew_ok_id "$task" || return 2
+  local f; f="$(_crew_state "$home")/$task.meta"
+  [ -f "$f" ] || return 1
+  local tmp; tmp="$(mktemp "${f}.XXXXXX")" || return 1
+  jq --arg k "$k" --argjson v "$json" '.[$k] = $v' "$f" > "$tmp" 2>/dev/null || { rm -f "$tmp"; return 1; }
   mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
 }
 
@@ -132,8 +150,46 @@ crew_ledger_note() {
   printf '%s' "$line"
 }
 
+# The last OUTCOME verb, ignoring lifecycle chatter.
+#
+# `crew_ledger_last` returns the literal final line, which is not the same
+# thing: the injected Stop and SessionEnd hooks fire AFTER the crewmate reports,
+# so a successful run ends "... done: ... / idle: / exited:". Reading the last
+# line called that a failure and threw away finished work — found by the first
+# real crewmate, which the fake backend could never have caught, because it
+# never writes lifecycle lines at all.
+crew_outcome() {
+  local f; f="$(_crew_state "${1:?}")/${2:?}.ledger"
+  [ -f "$f" ] || return 1
+  local line verb found=""
+  while IFS= read -r line; do
+    line="${line#* }"          # strip timestamp
+    verb="${line%%:*}"
+    case "$verb" in
+      done|failed|blocked) found="$verb" ;;
+    esac
+  done < "$f"
+  [ -n "$found" ] || return 1
+  printf '%s' "$found"
+}
+
+# The note attached to that outcome line.
+crew_outcome_note() {
+  local f; f="$(_crew_state "${1:?}")/${2:?}.ledger"
+  [ -f "$f" ] || return 1
+  local line verb found=""
+  while IFS= read -r line; do
+    line="${line#* }"
+    verb="${line%%:*}"
+    case "$verb" in
+      done|failed|blocked) found="${line#*: }" ;;
+    esac
+  done < "$f"
+  printf '%s' "$found"
+}
+
 crew_is_terminal() {
-  case "$(crew_ledger_last "$1" "$2")" in
+  case "$(crew_outcome "$1" "$2" 2>/dev/null)" in
     done|failed) return 0 ;;
     *) return 1 ;;
   esac
@@ -152,6 +208,7 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     count)    shift; crew_count "$@"; printf '\n' ;;
     get)      shift; crew_meta_get "$@" ;;
     last)     shift; crew_ledger_last "$@"; printf '\n' ;;
+    outcome)  shift; crew_outcome "$@"; printf '\n' ;;
     note)     shift; crew_ledger_note "$@"; printf '\n' ;;
     append)   shift; crew_ledger_append "$@" ;;
     terminal) shift; crew_is_terminal "$@" ;;

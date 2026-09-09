@@ -115,14 +115,14 @@ tick() {
   local t last
   while IFS= read -r t; do
     [ -n "$t" ] || continue
-    last="$(crew_ledger_last "$HARNESS_ROOT" "$t" 2>/dev/null || true)"
+    last="$(crew_outcome "$HARNESS_ROOT" "$t" 2>/dev/null || true)"
     case "$last" in
-      failed)  escalate "crew-$t-failed"  "crewmate $t failed: $(crew_ledger_note "$HARNESS_ROOT" "$t")" ;;
-      blocked) escalate "crew-$t-blocked" "crewmate $t is blocked: $(crew_ledger_note "$HARNESS_ROOT" "$t")" ;;
+      failed)  escalate "crew-$t-failed"  "crewmate $t failed: $(crew_outcome_note "$HARNESS_ROOT" "$t")" ;;
+      blocked) escalate "crew-$t-blocked" "crewmate $t is blocked: $(crew_outcome_note "$HARNESS_ROOT" "$t")" ;;
       done)
         if [ ! -f "$STATE/.afk-seen-$t" ]; then
           : > "$STATE/.afk-seen-$t"
-          digest_line "crewmate $t finished: $(crew_ledger_note "$HARNESS_ROOT" "$t")"
+          digest_line "crewmate $t finished: $(crew_outcome_note "$HARNESS_ROOT" "$t")"
         fi ;;
     esac
   done < <(crew_list "$HARNESS_ROOT" 2>/dev/null)

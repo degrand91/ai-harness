@@ -73,7 +73,8 @@ printf '%s' "$SNAP" | jq -r --argjson all "$SHOW_ALL" '
     "TOTALS",
     "  missions: \(.totals.missions)   active: \(.totals.active_missions)   open decisions: \(.totals.open_holds)"
       + (if .totals.unparsed > 0 then "   unreadable: \(.totals.unparsed)" else "" end),
-    "  tokens:   \(.totals.tokens.input) in / \(.totals.tokens.output) out",
+    "  tokens:   \(.totals.tokens.input) in / \(.totals.tokens.output) out"
+      + (if .totals.cost_usd > 0 then "   spend: $\(.totals.cost_usd * 100 | round / 100)" else "" end),
     "",
     "  snapshot: \(.generated_at)"
 '

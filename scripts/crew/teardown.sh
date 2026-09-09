@@ -50,9 +50,10 @@ WT="$(crew_meta_get "$HARNESS_ROOT" "$TASK" worktree)"
 BRANCH="$(crew_meta_get "$HARNESS_ROOT" "$TASK" branch)"
 PROJECT="$(crew_meta_get "$HARNESS_ROOT" "$TASK" project)"
 MISSION="$(crew_meta_get "$HARNESS_ROOT" "$TASK" mission)"
+MDIR_STATUS="$HARNESS_ROOT/missions/$MISSION/status.json"
 PENDING="$HARNESS_ROOT/state/$TASK.close-pending"
 
-LAST="$(crew_ledger_last "$HARNESS_ROOT" "$TASK")"
+LAST="$(crew_outcome "$HARNESS_ROOT" "$TASK" 2>/dev/null || true)"
 if [ "$ABANDON" -eq 0 ] && [ "$LAST" != "done" ]; then
   die "teardown.sh: $TASK last reported \"${LAST:-nothing}\", not done. Use --abandon to discard it deliberately."
 fi
@@ -133,9 +134,33 @@ else
   rm -rf "$WT" 2>/dev/null || true
 fi
 
+# --- fold the crewmate's usage into the mission -----------------------------
+# SubagentStop never fires for a crewmate, so nothing else accounts for its
+# spend. run.sh writes state/<task>.usage.json from the stream-json result
+# event; without this the mission's token block stayed at zero and /fleet
+# reported a fleet that had cost nothing.
+USAGE="$HARNESS_ROOT/state/$TASK.usage.json"
+SFILE="$MDIR_STATUS"
+if [ -f "$USAGE" ] && [ -f "$SFILE" ]; then
+  if UP="$(jq -s --arg role workers '
+        .[0] as $st | .[1] as $u
+        | ($st.tokens // {}) as $tk
+        | $st
+        | .tokens = ($tk
+            | .[$role] = {
+                input:  (((.[$role].input  // 0)) + ($u.input  // 0)),
+                output: (((.[$role].output // 0)) + ($u.output // 0))
+              }
+          )
+        | .cost_usd = (((.cost_usd // 0)) + ($u.cost_usd // 0))
+      ' "$SFILE" "$USAGE" 2>/dev/null)" && [ -n "$UP" ]; then
+    printf '%s\n' "$UP" > "$SFILE"
+  fi
+fi
+
 crew_forget "$HARNESS_ROOT" "$TASK"
 rm -f "$HARNESS_ROOT/state/$TASK.stream.jsonl" "$HARNESS_ROOT/state/$TASK.stderr" \
-      "$HARNESS_ROOT/state/$TASK.window.log" 2>/dev/null || true
+      "$HARNESS_ROOT/state/$TASK.window.log" "$USAGE" 2>/dev/null || true
 rm -rf "$HARNESS_ROOT/state/$TASK.inbox" 2>/dev/null || true
 rm -f "$PENDING"
 

@@ -78,6 +78,7 @@ case "$YOLO" in on|off) ;; *) die "brief.sh: --yolo must be on or off" ;; esac
 
 OUT="$MDIR/briefs"; mkdir -p "$OUT" || die "brief.sh: cannot write to $OUT"
 LEDGER="${HARNESS_ROOT}/state/${TASK}.ledger"
+SAY_CMD="${CODE_ROOT}/scripts/crew/say.sh"
 HANDOFF="$MDIR/briefs/${TASK}-handoff.md"
 
 TPL="$CODE_ROOT/templates/crew-brief.md"
@@ -90,6 +91,7 @@ tpl = pathlib.Path(sys.argv[1]).read_text()
 vals = {
     "{TASK_ID}": """${TASK}""",
     "{LEDGER_PATH}": """${LEDGER}""",
+    "{SAY_CMD}": """${SAY_CMD}""",
     "{HANDOFF_PATH}": """${HANDOFF}""",
     "{WORKTREE}": "(set at spawn)",
     "{BRANCH}": "(set at spawn)",

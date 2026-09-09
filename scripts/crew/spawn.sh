@@ -160,20 +160,37 @@ json.dump({
 PY
 
 # --- 5. the tool allowlist ---------------------------------------------------
-BASE_ALLOW="Read Edit Write Glob Grep TodoWrite"
-BASE_ALLOW="$BASE_ALLOW Bash(git add:*) Bash(git commit:*) Bash(git status:*) Bash(git diff:*) Bash(git log:*)"
-PROJ_ALLOW="$(registry_allow "$REGISTRY" "$PROJECT" 2>/dev/null || true)"
-if [ -n "$PROJ_ALLOW" ]; then
-  # "bun *, npx expo *" -> Bash(bun *) Bash(npx expo *)
-  OLDIFS="$IFS"; IFS=','
-  for c in $PROJ_ALLOW; do
-    c="${c#"${c%%[![:space:]]*}"}"; c="${c%"${c##*[![:space:]]}"}"
-    [ -n "$c" ] && BASE_ALLOW="$BASE_ALLOW Bash($c)"
-  done
-  IFS="$OLDIFS"
-fi
-DENY_TOOLS="WebFetch WebSearch Agent NotebookEdit"
-[ "$SCOUT" -eq 1 ] && BASE_ALLOW="Read Glob Grep TodoWrite Write"
+# Claude Code's pattern syntax is Bash(<prefix>:*) — a COLON, not a space. A
+# registry entry is written the way a human says it ("bun *"), so it is
+# normalised here rather than making the operator learn the syntax.
+#
+# Built as a JSON array because patterns contain spaces: joining on spaces and
+# splitting later broke every multi-word pattern, so the first real crewmate
+# could not commit or run its own test.
+PROJ_ALLOW_RAW="$(registry_allow "$REGISTRY" "$PROJECT" 2>/dev/null || true)"
+SAY="$CODE_ROOT/scripts/crew/say.sh"
+LEDGER_PATH="$HARNESS_ROOT/state/$TASK.ledger"
+
+ALLOW_JSON="$(python3 - "$PROJ_ALLOW_RAW" "$SAY" "$SCOUT" <<'PYEOF'
+import json, sys
+raw, say, scout = sys.argv[1:4]
+if scout == "1":
+    tools = ["Read", "Glob", "Grep", "TodoWrite", "Write"]
+else:
+    tools = ["Read", "Edit", "Write", "Glob", "Grep", "TodoWrite",
+             "Bash(git add:*)", "Bash(git commit:*)", "Bash(git status:*)",
+             "Bash(git diff:*)", "Bash(git log:*)", "Bash(git show:*)"]
+# The one command a crewmate may use to speak to its supervisor. Without it the
+# brief asks for progress reports the sandbox forbids.
+tools.append(f"Bash({say}:*)")
+for c in (raw or "").split(","):
+    c = c.strip().rstrip("*").rstrip().rstrip(":").strip()
+    if c:
+        tools.append(f"Bash({c}:*)")
+print(json.dumps(tools))
+PYEOF
+)"
+DENY_JSON='["WebFetch","WebSearch","Agent","NotebookEdit"]'
 
 # --- 6. record, then launch --------------------------------------------------
 [ -n "$MODEL" ] || MODEL="$(grep -oE 'model=[A-Za-z0-9._-]+' "$BRIEF" | head -n1 | cut -d= -f2 || true)"
@@ -183,9 +200,14 @@ crew_meta_write "$HARNESS_ROOT" "$TASK" \
   project="$PROJECT" mission="$MISSION" feature="$TASK" \
   worktree="$WORKTREE" branch="$BRANCH" brief="$BRIEF" \
   mode="$MODE" yolo="$YOLO" model="$MODEL" \
-  allow_tools="$BASE_ALLOW" deny_tools="$DENY_TOOLS" \
+  say_cmd="$SAY" ledger="$LEDGER_PATH" \
   kind="$([ "$SCOUT" -eq 1 ] && echo scout || echo ship)" \
   || die "spawn.sh: could not record state/$TASK.meta"
+
+crew_meta_set_json "$HARNESS_ROOT" "$TASK" allow_tools "$ALLOW_JSON" \
+  || die "spawn.sh: could not record the tool allowlist"
+crew_meta_set_json "$HARNESS_ROOT" "$TASK" deny_tools "$DENY_JSON" \
+  || die "spawn.sh: could not record the denied tools"
 
 crew_ledger_append "$HARNESS_ROOT" "$TASK" started "worktree $WORKTREE on $BRANCH"
 

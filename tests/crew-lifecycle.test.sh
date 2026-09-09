@@ -65,11 +65,23 @@ assert_contains "$keys" "PreToolUse"
 assert_file_missing "$proj/.claude/settings.local.json"
 
 it "grants the project's registered commands and nothing more"
-allow="$(crew_meta_get "$home" F001 allow_tools)"
-assert_contains "$allow" "Bash(make test)"
+# Stored as a JSON array, because patterns contain spaces: a space-joined
+# string got word-split into argv fragments that matched nothing, and the first
+# real crewmate could not commit or run its own test.
+allow="$(jq -r '.allow_tools | join("\n")' "$home/state/F001.meta")"
+assert_contains "$allow" "Bash(make test:*)"
 assert_contains "$allow" "Bash(git commit:*)"
 assert_not_contains "$allow" "Bash(git push"
-assert_contains "$(crew_meta_get "$home" F001 deny_tools)" "WebFetch"
+assert_contains "$(jq -r '.deny_tools | join(",")' "$home/state/F001.meta")" "WebFetch"
+
+it "grants the one command a crewmate may use to speak to its supervisor"
+# The ledger lives outside the worktree; without this the brief asks for
+# progress reports the sandbox forbids — which is exactly what happened on the
+# first real run.
+assert_contains "$allow" "crew/say.sh:*"
+
+it "uses Claude Code's colon pattern syntax, not a space"
+assert_not_contains "$allow" "Bash(make test)"
 
 it "launches run.sh rather than claude directly"
 assert_contains "$(cat "$CREW_FAKE_LOG")" "crew/run.sh"

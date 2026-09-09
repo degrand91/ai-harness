@@ -106,10 +106,10 @@ CREW_TEXT=""
 if . "$CODE_ROOT/scripts/lib/crew.sh" 2>/dev/null; then
   while IFS= read -r ctask; do
     [ -n "$ctask" ] || continue
-    clast="$(crew_ledger_last "$HARNESS_ROOT" "$ctask" 2>/dev/null || true)"
+    clast="$(crew_outcome "$HARNESS_ROOT" "$ctask" 2>/dev/null || true)"
     case "$clast" in
       blocked|done|failed)
-        CREW_TEXT="${CREW_TEXT}"$'\n'"  ${ctask}: ${clast} — $(crew_ledger_note "$HARNESS_ROOT" "$ctask" 2>/dev/null || true)" ;;
+        CREW_TEXT="${CREW_TEXT}"$'\n'"  ${ctask}: ${clast} — $(crew_outcome_note "$HARNESS_ROOT" "$ctask" 2>/dev/null || true)" ;;
       *)
         cpid="$(crew_meta_get "$HARNESS_ROOT" "$ctask" runner_pid 2>/dev/null || true)"
         case "$cpid" in
