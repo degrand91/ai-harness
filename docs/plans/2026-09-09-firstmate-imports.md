@@ -1,6 +1,6 @@
 # Plan: harness as central control plane
 
-Status: **Phases 0-1 merged** (`aac9b2a`, `fe1f6d9`, `1047ffa`). **Phase 2 built** on `phase-2-decision-holds`. Phases 3-5 in progress.
+Status: **Phases 0-2 merged** (`aac9b2a`, `fe1f6d9`, `1047ffa`, `ca0dd56`). **Phase 3 built** on `phase-3-crew`. Phases 4-5 in progress.
 Revised twice before build (gap review, issue review); see *Review log*.
 Source of borrowed mechanisms: [kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) @ `40c50ea`
 Supersedes: the four-item draft of the same date.
@@ -416,7 +416,17 @@ handoff is the only artifact that crosses agent boundaries" — is already a
 file-based process contract, and `protocols/parallel-worktrees.md` already
 specifies worktree isolation.
 
-### 3.0 — Spike first (half a day, no production code)
+### 3.0 — Spike: DONE, results in docs/verification/crew-spike.md
+All four testable checks passed against Claude Code 2.1.266; (e) `no-mistakes`
+could not be verified because the tool is not installed, so `[no-mistakes]`
+degrades to `direct-PR` plus a filed decision. One new finding changed the
+design: `--allowed-tools` / `--disallowed-tools` are **variadic** and silently
+swallow a trailing positional prompt, so the launch prompt goes on **stdin**.
+
+(b) came out better than assumed: a disallowed tool is *absent from the model's
+tool list*, so `--dangerously-skip-permissions` is not needed anywhere.
+
+### 3.0 (original) — Spike first (half a day, no production code)
 The headless design below rests on five behaviours of Claude Code 2.1.x that are
 documented but not yet exercised here. Verify each in a throwaway worktree
 **before** writing `spawn.sh`; any failure changes the design, not the schedule.

@@ -13,6 +13,19 @@ At any moment, **at most one Worker subagent is active**. The next Worker reads 
 - Validation can run between features and catch regressions early.
 - Slower clock time. Faster correct time.
 
+## Crew does not change this rule
+
+Since [crew.md](crew.md), a Worker is its own process in its own worktree rather
+than an in-process subagent. That separates two things this document had
+conflated: **running as its own process** and **running at the same time as
+another Worker**. Only the first changed.
+
+`crew.max_concurrent` ships at **1** and `scripts/crew/spawn.sh` refuses to
+exceed it. Everything below still holds: two Workers editing concurrently fork
+the architecture, and validation between features is what stops errors
+compounding. Raising the limit is a deliberate change to a mission's
+`status.json`, not a convenience.
+
 ## What is allowed in parallel
 
 Only **read-only, non-conflicting** work:
