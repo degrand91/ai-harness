@@ -1,6 +1,6 @@
 # Plan: harness as central control plane
 
-Status: **Phase 0 merged** (`aac9b2a`). **Phase 1 built** on `phase-1-control-plane`. Phases 2–5 awaiting approval.
+Status: **Phases 0-1 merged** (`aac9b2a`, `fe1f6d9`, `1047ffa`). **Phase 2 built** on `phase-2-decision-holds`. Phases 3-5 in progress.
 Revised twice before build (gap review, issue review); see *Review log*.
 Source of borrowed mechanisms: [kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) @ `40c50ea`
 Supersedes: the four-item draft of the same date.

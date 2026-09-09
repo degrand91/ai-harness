@@ -105,4 +105,23 @@ assert_rc 0 "$HOOK_RC"
 printf '%s' "$HOOK_OUT" | jq -e . >/dev/null 2>&1; assert_rc 0 $?
 assert_contains "$(ctx)" "unreadable"
 
+# --- decision holds ---------------------------------------------------------
+it "puts open decisions ahead of inbox notes and mission state"
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/hold.sh" open 2026-01-01-alpha --question "Merge PR 42?" >/dev/null 2>&1
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/inbox.sh" note "an idea" >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+c="$(ctx)"
+assert_contains "$c" "Merge PR 42?"
+assert_contains "$c" "OPEN DECISIONS"
+before_holds="${c%%OPEN DECISIONS*}"
+before_notes="${c%%Undrained*}"
+before_miss="${c%%Active missions*}"
+[ "${#before_holds}" -lt "${#before_notes}" ] || _fail "decisions should precede inbox notes"
+[ "${#before_holds}" -lt "${#before_miss}" ]  || _fail "decisions should precede mission state"
+
+it "stops mentioning a decision once it is answered"
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/hold.sh" answer 2026-01-01-alpha DH-001 "yes, merge" >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_not_contains "$(ctx)" "Merge PR 42?"
+
 finish

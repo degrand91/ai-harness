@@ -91,6 +91,25 @@ assert_rc 2 "$HOOK_RC"
 assert_contains "$HOOK_ERR" "m-corrupt"
 rm -rf "$home/missions/m-corrupt"
 
+it "blocks a stop when a mission awaits approval with no decision filed"
+# A question asked only in a chat turn is erased by a restart or a compaction.
+mkmission "$home" m-approve '{"state":"awaiting_approval","features":[]}' >/dev/null
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_rc 2 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "m-approve"
+assert_contains "$HOOK_ERR" "no decision is filed"
+
+it "allows the stop once the decision is on disk"
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/hold.sh" open m-approve --question "Approve the plan?" >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+
+it "blocks again once that decision is answered but the state has not moved on"
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/hold.sh" answer m-approve DH-001 "approved" >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_rc 2 "$HOOK_RC"
+rm -rf "$home/missions/m-approve"
+
 it "never writes to stdout (stdout is reserved for hook JSON)"
 mkmission "$home" m-quiet '{"state":"executing","features":[]}' >/dev/null
 run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"

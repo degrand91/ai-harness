@@ -64,7 +64,10 @@
       "Bash(./scripts/lib/registry.sh *)",
       "Skill(fleet)",
       "Skill(project)",
-      "Skill(inbox)"
+      "Skill(inbox)",
+      "Bash(./scripts/hold.sh *)",
+      "Bash(./scripts/lib/holds.sh *)",
+      "Skill(decide)"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -198,6 +201,28 @@
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-end-release-lock.sh",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-compact-snapshot.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/user-prompt-restore.sh",
+            "timeout": 5
           }
         ]
       }
