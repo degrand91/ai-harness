@@ -215,8 +215,15 @@ crew_ledger_append "$HARNESS_ROOT" "$TASK" started "worktree $WORKTREE on $BRANC
 
 LOG="$HARNESS_ROOT/state/$TASK.window.log"
 if ! backend_open "$TASK" "$WORKTREE" "$LOG" "$CODE_ROOT/scripts/crew/run.sh" "$HARNESS_ROOT" "$TASK"; then
-  crew_ledger_append "$HARNESS_ROOT" "$TASK" failed "could not open a session window"
-  die "spawn.sh: could not open a window for $TASK (backend: ${HARNESS_CREW_BACKEND:-tmux})" 1
+  # ROLL BACK. Nothing ran, so leaving a worktree and a meta record behind would
+  # make the next spawn refuse ("already exists and has finished") and force a
+  # manual --abandon for a crewmate that never started. A launch that failed
+  # should leave the same state as one never attempted.
+  git -C "$PROJ_PATH" worktree remove --force "$WORKTREE" >/dev/null 2>&1 || rm -rf "$WORKTREE"
+  git -C "$PROJ_PATH" worktree prune >/dev/null 2>&1 || true
+  git -C "$PROJ_PATH" branch -D "$BRANCH" >/dev/null 2>&1 || true
+  crew_forget "$HARNESS_ROOT" "$TASK"
+  die "spawn.sh: could not open a window for $TASK (backend: ${HARNESS_CREW_BACKEND:-tmux}). Nothing was launched and the worktree has been removed." 1
 fi
 
 printf 'Spawned %s on %s [%s yolo=%s model=%s]\n  worktree: %s\n  branch:   %s\n' \

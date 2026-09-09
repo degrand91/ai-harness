@@ -21,8 +21,20 @@ backend_open() {
   _tmux_ensure_session || { printf 'crew: could not create tmux session %s\n' "$_TMUX_SESSION" >&2; return 1; }
   # `remain-on-exit` keeps the last screen after the process ends, which is the
   # difference between diagnosing a failed crewmate and guessing about it.
-  tmux new-window -d -t "$_TMUX_SESSION" -n "hc-$task" -c "$cwd" \
-    "$* 2>&1 | tee -a $(printf '%q' "$log")" 2>/dev/null || return 1
+  # `-t <session>:` with the TRAILING COLON means "this session, next free
+  # index". Without it tmux reads the target as window <session>:0 and fails
+  # with "create window failed: index 0 in use" — so the first spawn into a
+  # session never worked. The fake backend cannot catch this, and a single
+  # earlier tmux run got past it by luck of window indices.
+  local err; err="$(mktemp)"
+  if ! tmux new-window -d -t "${_TMUX_SESSION}:" -n "hc-$task" -c "$cwd" \
+       "$* 2>&1 | tee -a $(printf '%q' "$log")" 2>"$err"; then
+    printf 'crew: tmux could not open a window for %s: %s\n' "$task" "$(head -1 "$err")" >&2
+    rm -f "$err"; return 1
+  fi
+  rm -f "$err"
+  # Best-effort: a command that exits instantly is already gone by now. A real
+  # crewmate runs for minutes, and this keeps its last screen readable.
   tmux set-window-option -t "$(_win "$task")" remain-on-exit on >/dev/null 2>&1 || true
 }
 backend_alive()   { tmux list-windows -t "$_TMUX_SESSION" -F '#{window_name}' 2>/dev/null | grep -qx "hc-$1"; }
