@@ -11,8 +11,9 @@ _fake_log() { printf '%s\n' "$*" >> "${CREW_FAKE_LOG:-/dev/null}"; }
 backend_open() {
   local task="$1" cwd="$2" log="$3"; shift 3
   _fake_log "open task=$task cwd=$cwd log=$log cmd=$*"
-  : > "${CREW_FAKE_LOG:-/dev/null}.alive.$task" 2>/dev/null || true
+  [ -n "${CREW_FAKE_LOG:-}" ] && { : > "${CREW_FAKE_LOG}.alive.$task" 2>/dev/null || true; }
+  return 0
 }
-backend_alive()   { [ -f "${CREW_FAKE_LOG:-/dev/null}.alive.$1" ]; }
-backend_kill()    { _fake_log "kill task=$1"; rm -f "${CREW_FAKE_LOG:-/dev/null}.alive.$1" 2>/dev/null || true; }
+backend_alive()   { [ -n "${CREW_FAKE_LOG:-}" ] && [ -f "${CREW_FAKE_LOG}.alive.$1" ]; }
+backend_kill()    { _fake_log "kill task=$1"; [ -n "${CREW_FAKE_LOG:-}" ] && rm -f "${CREW_FAKE_LOG}.alive.$1" 2>/dev/null; return 0; }
 backend_capture() { _fake_log "capture task=$1 lines=${2:-40}"; printf '(fake backend: no pane for %s)\n' "$1"; }

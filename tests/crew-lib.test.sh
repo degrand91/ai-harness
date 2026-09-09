@@ -104,4 +104,45 @@ crew_meta_write "$home" "../evil" project=x 2>/dev/null; assert_rc 2 $?
 crew_meta_write "$home" "a/b" project=x 2>/dev/null; assert_rc 2 $?
 assert_file_missing "$home/state/../evil.meta"
 
+# --- outcome vs last line ---------------------------------------------------
+it "reads the OUTCOME through lifecycle lines appended after it"
+# The injected Stop and SessionEnd hooks fire AFTER the crewmate reports, so a
+# successful run ends "done: / idle: / exited:". Reading the literal last line
+# called that a failure and threw away finished work. Found by the first real
+# crewmate; the fake backend can never catch it, because it writes no lifecycle
+# lines at all.
+crew_meta_write "$home" L1 project=p mission=m feature=L1
+crew_ledger_append "$home" L1 progress "working"
+crew_ledger_append "$home" L1 "done" "commit abc123"
+crew_ledger_append "$home" L1 idle ""
+crew_ledger_append "$home" L1 exited ""
+assert_eq "exited" "$(crew_ledger_last "$home" L1)"
+assert_eq "done"   "$(crew_outcome "$home" L1)"
+assert_eq "commit abc123" "$(crew_outcome_note "$home" L1)"
+crew_is_terminal "$home" L1; assert_rc 0 $?
+
+it "takes the LATEST outcome when a crewmate reports more than once"
+crew_meta_write "$home" L2 project=p mission=m feature=L2
+crew_ledger_append "$home" L2 blocked "needed a key"
+crew_ledger_append "$home" L2 progress "unblocked"
+crew_ledger_append "$home" L2 "done" "finished after all"
+crew_ledger_append "$home" L2 exited ""
+assert_eq "done" "$(crew_outcome "$home" L2)"
+
+it "reports no outcome for a crewmate that only ever went busy and idle"
+crew_meta_write "$home" L3 project=p mission=m feature=L3
+crew_ledger_append "$home" L3 busy ""
+crew_ledger_append "$home" L3 idle ""
+out="$(crew_outcome "$home" L3)"; rc=$?
+assert_rc 1 "$rc"
+assert_eq "" "$out"
+crew_is_terminal "$home" L3; assert_rc 1 $?
+
+it "still treats blocked as non-terminal when it is the latest outcome"
+crew_meta_write "$home" L4 project=p mission=m feature=L4
+crew_ledger_append "$home" L4 blocked "waiting"
+crew_ledger_append "$home" L4 idle ""
+assert_eq "blocked" "$(crew_outcome "$home" L4)"
+crew_is_terminal "$home" L4; assert_rc 1 $?
+
 finish

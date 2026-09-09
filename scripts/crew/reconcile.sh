@@ -30,8 +30,8 @@ ANY=0; SUSPICIOUS=0
 while IFS= read -r task; do
   [ -n "$task" ] || continue
   ANY=1
-  last="$(crew_ledger_last "$HARNESS_ROOT" "$task")"
-  note="$(crew_ledger_note "$HARNESS_ROOT" "$task")"
+  last="$(crew_outcome "$HARNESS_ROOT" "$task" 2>/dev/null || true)"
+  note="$(crew_outcome_note "$HARNESS_ROOT" "$task" 2>/dev/null || true)"
   pid="$(crew_meta_get "$HARNESS_ROOT" "$task" runner_pid 2>/dev/null || true)"
   alive=0
   case "$pid" in ''|*[!0-9]*) ;; *) kill -0 "$pid" 2>/dev/null && alive=1 ;; esac
@@ -43,7 +43,7 @@ while IFS= read -r task; do
   esac
 
   if [ "$alive" -eq 1 ]; then
-    say "  $task: working (runner $pid, last: ${last:-none})"
+    say "  $task: working (runner $pid, last: $(crew_ledger_last "$HARNESS_ROOT" "$task"))"
   else
     SUSPICIOUS=$((SUSPICIOUS + 1))
     say "  $task: SUSPICIOUS — no runner, and the ledger never reached a terminal line (last: ${last:-none})"

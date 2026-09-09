@@ -44,7 +44,13 @@ meta() { crew_meta_get "$HOME_DIR" "$TASK" "$1" 2>/dev/null; }
 # be signalled for this task; the claude child is ours to interrupt, not theirs.
 crew_meta_set "$HOME_DIR" "$TASK" runner_pid "$$" 2>/dev/null || true
 WORKTREE="$(meta worktree)"; BRIEF="$(meta brief)"; MODEL="$(meta model)"
-ALLOW="$(meta allow_tools)"; DENY="$(meta deny_tools)"
+# Tool patterns CONTAIN SPACES ("Bash(git add:*)"), so they are stored in the
+# meta as a JSON array and read one per line. Space-splitting them turned
+# "Bash(git add:*)" into two argv entries that matched nothing, and the first
+# real crewmate could not commit, run its own test, or report progress.
+ALLOW_ARR=(); DENY_ARR=()
+while IFS= read -r _p; do [ -n "$_p" ] && ALLOW_ARR+=("$_p"); done < <(jq -r '(.allow_tools // []) | .[]' "$STATE/$TASK.meta" 2>/dev/null)
+while IFS= read -r _p; do [ -n "$_p" ] && DENY_ARR+=("$_p"); done < <(jq -r '(.deny_tools // []) | .[]' "$STATE/$TASK.meta" 2>/dev/null)
 [ -n "$WORKTREE" ] && [ -d "$WORKTREE" ] || { crew_ledger_append "$HOME_DIR" "$TASK" failed "worktree missing"; exit 1; }
 [ -n "$BRIEF" ] && [ -f "$BRIEF" ] || { crew_ledger_append "$HOME_DIR" "$TASK" failed "brief missing"; exit 1; }
 
@@ -110,10 +116,8 @@ launch() {  # <prompt>
   [ -n "$sid" ] && cmd+=(--resume "$sid")
   cmd+=(--append-system-prompt-file "$CODE_ROOT/templates/crew-persona.md")
   # Variadic flags go LAST, and the prompt goes on stdin.
-  # shellcheck disable=SC2206  # deliberate word splitting: the lists are ours
-  [ -n "$ALLOW" ] && { local a=($ALLOW); cmd+=(--allowed-tools "${a[@]}"); }
-  # shellcheck disable=SC2206
-  [ -n "$DENY" ]  && { local d=($DENY);  cmd+=(--disallowed-tools "${d[@]}"); }
+  [ "${#ALLOW_ARR[@]}" -gt 0 ] && cmd+=(--allowed-tools "${ALLOW_ARR[@]}")
+  [ "${#DENY_ARR[@]}" -gt 0 ]  && cmd+=(--disallowed-tools "${DENY_ARR[@]}")
 
   printf '%s' "$prompt" | ( cd "$WORKTREE" && "${cmd[@]}" ) >> "$STREAM" 2>>"$STATE/$TASK.stderr" &
   CHILD=$!
@@ -144,11 +148,12 @@ while :; do
     continue
   fi
 
-  LAST="$(crew_ledger_last "$HOME_DIR" "$TASK")"
+  # The OUTCOME, not the last line: Stop and SessionEnd hooks append after it.
+  LAST="$(crew_outcome "$HOME_DIR" "$TASK" 2>/dev/null || true)"
   case "$LAST" in
     done)    exit 0 ;;
     blocked) printf '\ncrewmate %s is blocked: %s\nattach with: ./scripts/crew/attach.sh %s\n' \
-               "$TASK" "$(crew_ledger_note "$HOME_DIR" "$TASK")" "$TASK"; exit 3 ;;
+               "$TASK" "$(crew_outcome_note "$HOME_DIR" "$TASK")" "$TASK"; exit 3 ;;
     failed)  exit 1 ;;
   esac
 

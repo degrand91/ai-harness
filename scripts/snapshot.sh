@@ -225,10 +225,14 @@ jq "${JQ_ARGS[@]}" '
             color:     (.color // null),
             followups: (.followups // [] | if type == "array" then length else . end)
           })),
+          # `select(type == "object")`: .tokens holds per-role objects, but a
+          # hand-edited or future status.json may put a scalar alongside them,
+          # and one bad value must not blank the whole fleet.
           tokens: {
-            input:  ([$d.tokens // {} | .[]? | .input  // 0] | add // 0),
-            output: ([$d.tokens // {} | .[]? | .output // 0] | add // 0)
-          }
+            input:  ([$d.tokens // {} | .[]? | select(type == "object") | .input  // 0] | add // 0),
+            output: ([$d.tokens // {} | .[]? | select(type == "object") | .output // 0] | add // 0)
+          },
+          cost_usd: ($d.cost_usd // 0)
         }
     )) as $missions
   | {
@@ -244,7 +248,8 @@ jq "${JQ_ARGS[@]}" '
         tokens: {
           input:  ($missions | map(.tokens.input)  | add // 0),
           output: ($missions | map(.tokens.output) | add // 0)
-        }
+        },
+        cost_usd: ($missions | map(.cost_usd) | add // 0)
       }
     }
 '
