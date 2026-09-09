@@ -13,6 +13,9 @@
   "closed_at": null,
   "abandoned_reason": null,
   "current_feature": "F003",
+  "execution": "crew",
+  "crew": { "max_concurrent": 1 },
+  "target_repo": "/abs/path/to/the/project",
   "features": [
     { "id": "F001", "slug": "add-oauth-routes", "state": "closed", "color": "green", "followups": 0 },
     { "id": "F002", "slug": "add-token-store", "state": "closed", "color": "green", "followups": 1 },
@@ -38,6 +41,21 @@
   }
 }
 ```
+
+### execution enum
+`crew | subagent`
+
+Decided **once at intake** and never changed: a mission that switches execution
+model half way through is one nobody can reason about afterwards.
+
+- `crew` — features run as headless processes in their own worktrees. Requires
+  `target_repo` to be a registered project (`scripts/project.sh list`).
+- `subagent` — features run as in-process `Agent` calls. The fallback when the
+  project is not registered.
+
+`scripts/feature-dispatch.sh` resolves it if absent, records it, and honours it
+thereafter. `crew.max_concurrent` defaults to 1; see
+[protocols/serial-execution.md](../protocols/serial-execution.md).
 
 ### state enum
 `intake | planning | contract | awaiting_approval | executing | feature_loop | closing | closed | abandoned | paused`

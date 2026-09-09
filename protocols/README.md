@@ -31,6 +31,7 @@ These documents govern the sequencing and coordination rules for mission executi
 | [validation-contract.md](validation-contract.md) | How to write a validation contract: executable assertions, contract slices, amendment rules |
 | [continuity.md](continuity.md) | The turn-end guard and the watcher: what refuses a stop, what wakes a session, and every rail on both |
 | [afk.md](afk.md) | Away mode: what is batched, what escalates, and the wedge alarm |
+| [feature-loop.md](feature-loop.md) | How one feature goes from pending to closed, under either execution model |
 | [crew.md](crew.md) | Crewmates as headless processes in their own worktrees: lifecycle, ledger, sandbox, teardown |
 | [decision-hold.md](decision-hold.md) | Why a blocking question to the captain is a file, and every point that enforces it |
 | [project-registry.md](project-registry.md) | The registry of projects and their standing delivery posture; why registered posture and per-task delivery stay separate |

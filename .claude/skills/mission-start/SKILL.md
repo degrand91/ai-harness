@@ -68,6 +68,14 @@ missions/<id>/
 └── features/        ← empty (subdirs created per feature later)
 ```
 
+`status.json` shape: see `templates/status-schema.md`.
+
+**Record `execution` and `target_repo` now.** A mission that decides its execution model later, or changes it half way through, is one nobody can reason about afterwards:
+
+- Set `target_repo` to the absolute path of the project this mission changes.
+- Run `./scripts/project.sh list`. If that path is a **registered** project, set `"execution": "crew"` and add `"crew": {"max_concurrent": 1}`. Features will run as crewmates in their own worktrees, and you stay free while they work.
+- If it is **not** registered, set `"execution": "subagent"` and say so to the captain, offering to register it: `./scripts/project.sh add <name> <path> --mode <no-mistakes|direct-PR|local-only>`. Do not register it for them — the delivery posture is their decision.
+
 `status.json` shape: see `templates/status-schema.md`. Default the `models` block (orchestrator=opus, worker_default=sonnet, scrutiny_validator_default=haiku, user_testing_validator_default=sonnet, explorer_default=haiku). Token counters start at 0. If the environment variable `CLAUDE_SESSION_ID` is set, include `"session_id": "<value>"` in the status.json; otherwise set it to `"unknown"`.
 
 ## 4. Author `mission.md`
@@ -117,7 +125,17 @@ Surface:
 - If you have clarification questions from planning, list them here (max 3). These are things that, if answered differently, would change the plan. Label them clearly: "Questions before I proceed:"
 - The explicit ask: "Approved?"
 
-**Do not proceed to feature execution until the user says approved.** This is the only mandatory human gate. After approval, you enter the feature loop autonomously.
+**File the approval as a decision before you ask for it.**
+
+```
+./scripts/hold.sh open <mission-id> --question "Approve this plan and contract?" --options "approve,revise"
+```
+
+Approval is `DH-000` — a decision like any other, so `awaiting_approval` stops being a special case and the answer survives a restart or a compaction. The turn-end guard refuses to end a turn on an `awaiting_approval` mission with nothing filed, which is what stops the question evaporating into chat.
+
+When the captain approves, record it (`./scripts/hold.sh answer <mission-id> <id> "approved"`), set `state = "executing"`, and enter the feature loop with `/dispatch`.
+
+**Do not proceed to feature execution until the user says approved.** This is the only mandatory human gate.
 
 ## What NOT to do
 

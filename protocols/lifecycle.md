@@ -35,12 +35,26 @@ The state machine every mission moves through. The Orchestrator owns transitions
 - Each assertion has an ID (`C-001`, `C-002`, …) so features can cite them.
 
 ### awaiting_approval → executing
-- User says "approved" (or equivalent). The Orchestrator records the approval in `log.md` with a timestamp.
+- Approval is a **decision on disk**, `DH-000`, filed before it is asked
+  ([decision-hold.md](decision-hold.md)). The user answers it; the Orchestrator
+  records the answer with `hold.sh answer`, then sets `executing` and logs it.
+- The turn-end guard refuses to end a turn on an `awaiting_approval` mission
+  with no decision filed, which is what stops the question evaporating into a
+  chat turn a restart would erase.
 
 ### executing → feature_loop (and back)
-- For each feature, the Orchestrator runs the sub-state machine in [worker.md](worker.md), [scrutiny-validator.md](scrutiny-validator.md), [user-testing-validator.md](user-testing-validator.md).
+- Each feature runs through [feature-loop.md](feature-loop.md), which owns
+  dispatch, outcome, validation and teardown under both execution models
+  (`crew` and `subagent`). Validation itself is
+  [scrutiny-validator.md](scrutiny-validator.md) and
+  [user-testing-validator.md](user-testing-validator.md).
 - On feature complete-green, advance.
-- On feature red, open a follow-up feature (numbered after the current feature, with `-followup-<n>` suffix), and continue.
+- On feature red, the crewmate is **re-briefed on the same branch** rather than
+  respawned; a follow-up feature (`-followup-<n>`) is opened when the work is
+  genuinely separate.
+- The mission does not end a turn with a pending feature, nothing in flight and
+  nobody waiting on the captain — the turn-end guard refuses it. See
+  [continuity.md](continuity.md).
 
 ### executing → closing
 - All features in `plan.md` have a green status, including any follow-ups.

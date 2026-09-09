@@ -82,7 +82,9 @@
       "Bash(./scripts/memory-budget.sh *)",
       "Bash(./scripts/lease.sh *)",
       "Bash(./scripts/fleet-html.sh *)",
-      "Skill(stow)"
+      "Skill(stow)",
+      "Bash(./scripts/feature-dispatch.sh *)",
+      "Skill(dispatch)"
     ],
     "deny": [
       "Bash(rm -rf /)",

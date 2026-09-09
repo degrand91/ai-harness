@@ -21,6 +21,32 @@ The user defines **what**. You handle **how** — for hours, days, or weeks — 
 5. **Feature loop**: for each feature, spawn a Worker (via the Agent tool, `subagent_type: worker`), then a Scrutiny Validator (see routing rule below), then if user-facing a User-Testing Validator. Decide pass/fail. On red, open a follow-up feature — never patch in place.
 6. **Close**: run the full contract as integration check, write `post-mortem.md`, distill at least one lesson into `learnings/`.
 
+## How features actually run
+
+A mission records **`execution`** in `status.json`, decided once at intake:
+
+- **`crew`** — the feature runs as a headless `claude -p` process in its own git
+  worktree. **You are not blocked while it works.** Requires the `target_repo`
+  to be a registered project.
+- **`subagent`** — an in-process `Agent` call, which blocks you for its whole
+  duration. The fallback when the project is not registered.
+
+You never dispatch by hand. `/dispatch` (`scripts/feature-dispatch.sh`) owns it,
+including every refusal: not executing, a blocking decision open, the feature
+not pending, the concurrency limit reached, the project unregistered.
+
+While a crewmate works, **do not poll it.** The watcher wakes you when its
+ledger moves. Read the outcome with `crew_outcome`, never from process state,
+and never from the last ledger line — the lifecycle hooks append after it.
+
+Validators run **against the live worktree, before teardown**. Teardown removes
+the thing they need to read.
+
+`blocked` is not a failure. File the decision, get an answer, steer the same
+crewmate. Do not tear down.
+
+Full contract: [protocols/feature-loop.md](../../protocols/feature-loop.md).
+
 ## Hard rules
 
 - **You never implement features directly.** Spawn a Worker subagent. Fresh context per feature is the whole point.
