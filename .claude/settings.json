@@ -56,7 +56,15 @@
       "Bash(./tests/run.sh *)",
       "Bash(./scripts/doctor.sh *)",
       "Bash(./scripts/lint.sh *)",
-      "Bash(./scripts/lib/status-read.sh *)"
+      "Bash(./scripts/lib/status-read.sh *)",
+      "Bash(./scripts/project.sh *)",
+      "Bash(./scripts/snapshot.sh *)",
+      "Bash(./scripts/fleet.sh *)",
+      "Bash(./scripts/inbox.sh *)",
+      "Bash(./scripts/lib/registry.sh *)",
+      "Skill(fleet)",
+      "Skill(project)",
+      "Skill(inbox)"
     ],
     "deny": [
       "Bash(rm -rf /)",

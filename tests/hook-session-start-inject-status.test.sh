@@ -79,4 +79,30 @@ run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$empty"
 assert_rc 0 "$HOOK_RC"
 printf '%s' "$HOOK_OUT" | jq -e . >/dev/null 2>&1; assert_rc 0 $?
 
+# --- inbox integration ------------------------------------------------------
+it "surfaces undrained inbox notes ahead of mission state"
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/inbox.sh" note "look at the flaky test" >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+c="$(ctx)"
+assert_contains "$c" "flaky test"
+assert_contains "$c" "Undrained inbox notes"
+# Notes come first: they are asks nothing has acted on yet.
+[ "${c%%Active missions*}" != "$c" ] || _fail "expected mission summary after the notes"
+notes_at="${c%%Undrained*}"
+miss_at="${c%%Active missions*}"
+[ "${#notes_at}" -lt "${#miss_at}" ] || _fail "inbox notes should precede mission state"
+
+it "says nothing about the inbox once notes are acknowledged"
+CLAUDE_PROJECT_DIR="$home" "$HARNESS_ROOT/scripts/inbox.sh" drain --ack N001 >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_not_contains "$(ctx)" "Undrained inbox notes"
+
+it "still emits valid JSON with an unreadable note present"
+printf 'not json\n' > "$home/data/inbox/N009.json"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
+assert_rc 0 "$HOOK_RC"
+printf '%s' "$HOOK_OUT" | jq -e . >/dev/null 2>&1; assert_rc 0 $?
+assert_contains "$(ctx)" "unreadable"
+
 finish

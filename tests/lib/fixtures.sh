@@ -99,6 +99,10 @@ assert_file_missing() {
 mktmphome() {
   local home
   home="$(mktemp -d "${TMPDIR:-/tmp}/harness-test.XXXXXX")"
+  # Normalise: TMPDIR often ends in a slash, so mktemp yields a doubled one.
+  # Scripts that resolve paths with `cd && pwd` collapse it, and a test that
+  # compared against the raw string would fail on the difference alone.
+  home="$(cd "$home" && pwd)"
   mkdir -p "$home/missions" "$home/.claude/hooks" "$home/.claude/agents" \
            "$home/data" "$home/state" "$home/config" "$home/learnings"
   : > "$home/.claude/agents/orchestrator.md"
