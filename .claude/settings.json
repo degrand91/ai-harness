@@ -71,7 +71,13 @@
       "Bash(./scripts/crew/*)",
       "Bash(./scripts/pr-poll.sh *)",
       "Bash(git worktree list*)",
-      "Skill(crew)"
+      "Skill(crew)",
+      "Bash(./scripts/watch.sh *)",
+      "Bash(./scripts/afk.sh *)",
+      "Bash(./scripts/notify.sh *)",
+      "Skill(afk)",
+      "Skill(pause)",
+      "Skill(resume)"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -110,6 +116,16 @@
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-no-red-status.sh",
             "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-watch-rearm.sh",
+            "asyncRewake": true,
+            "timeout": 28800
           }
         ]
       }

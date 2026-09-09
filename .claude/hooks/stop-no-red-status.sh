@@ -25,7 +25,19 @@
 #
 # stdout is never written: it is reserved for hook JSON.
 #
-# Tuning: HARNESS_STUCK_SECONDS (default 3600).
+# It is ALSO the primary continuity mechanism (§4.0). Once crewmates are real
+# processes, nearly every wake is an event. The remaining case — the
+# orchestrator ended its turn with an obvious agent-owned next step and nothing
+# in flight — is an orchestrator MISTAKE, and the right response is to refuse
+# that stop, not to resume it on a timer. The asyncRewake watcher's
+# continuation wake is only the backstop for when this guard fails open.
+#
+# LOOP SAFETY: three consecutive blind-stop blocks and this fails open with one
+# notification. A guard that can refuse forever is a wedged session, and a
+# wedged session is worse than a loop that ran one feature too many.
+#
+# Tuning: HARNESS_STUCK_SECONDS (3600) · HARNESS_BLIND_STOP_LIMIT (3)
+#         HARNESS_LOOP_ACTIVE_SECONDS (86400).
 
 set -uo pipefail
 
@@ -72,6 +84,15 @@ for mission_dir in "$MISSIONS"/*/; do
   # is filed for it, the question exists only in a chat turn — and a restart or
   # a compaction erases it. Refuse the stop rather than let it evaporate.
   if [ "$state" = "awaiting_approval" ]; then
+    # Recency-bounded, like the blind-stop rule below. A mission left awaiting
+    # approval months ago is a housekeeping problem, not a reason to refuse
+    # every stop in every future session — and a rail that fires forever on
+    # something nobody is working on is a rail people turn off.
+    ml="$(mission_last_activity "$mission_dir" 2>/dev/null || echo 0)"
+    case "$ml" in ''|*[!0-9]*) ml=0 ;; esac
+    if [ "$ml" -gt 0 ] && [ $(( NOW - ml )) -ge "${HARNESS_LOOP_ACTIVE_SECONDS:-86400}" ]; then
+      continue
+    fi
     if [ "$(holds_count_open "$mission_dir")" -eq 0 ] 2>/dev/null; then
       PROBLEMS+=("Mission ${id}: state is awaiting_approval but no decision is filed. File it (./scripts/hold.sh open ${id} --question \"...\") so it survives a restart, or change the mission state.")
     fi
@@ -112,6 +133,78 @@ for mission_dir in "$MISSIONS"/*/; do
     fi
   fi
 done
+
+# --- §4.0: did this turn end blind? -----------------------------------------
+# A mission executing, with a pending feature, nothing in flight, and nobody
+# waiting on the captain, means the loop stopped for no reason.
+BLIND=""
+BLIND_COUNTER="$HARNESS_ROOT/state/blind-stop-count"
+if [ "${#PROBLEMS[@]}" -eq 0 ] && [ -d "$HARNESS_ROOT/state" ]; then
+  # shellcheck source=../../scripts/lib/crew.sh
+  if . "$CODE_ROOT/scripts/lib/crew.sh" 2>/dev/null; then
+    for mission_dir in "$MISSIONS"/*/; do
+      [ -d "$mission_dir" ] || continue
+      id="$(basename "$mission_dir")"
+      case "$id" in .*) continue ;; esac
+      [ -f "$mission_dir/status.json" ] || continue
+      [ "$(status_state "$mission_dir/status.json" 2>/dev/null)" = "executing" ] || continue
+      [ "$(holds_count_blocking "${mission_dir%/}" 2>/dev/null || echo 0)" -eq 0 ] || continue
+
+      # A mission nobody has touched in days is not "the loop stopped for no
+      # reason" — it is an abandoned mission. Without this bound, a stale
+      # mission left `executing` months ago refuses every stop in every future
+      # session, which is precisely how a safety rail becomes something people
+      # switch off.
+      last="$(mission_last_activity "${mission_dir%/}" 2>/dev/null || echo 0)"
+      case "$last" in ''|*[!0-9]*) last=0 ;; esac
+      [ "$last" -gt 0 ] || continue
+      [ $(( NOW - last )) -lt "${HARNESS_LOOP_ACTIVE_SECONDS:-86400}" ] || continue
+
+      pending="$(jq -r '[.features[]? | select(.state == "pending")] | length' "$mission_dir/status.json" 2>/dev/null || echo 0)"
+      case "$pending" in ''|*[!0-9]*) pending=0 ;; esac
+      [ "$pending" -gt 0 ] || continue
+
+      live=0
+      while IFS= read -r _t; do
+        [ -n "$_t" ] || continue
+        [ "$(crew_meta_get "$HARNESS_ROOT" "$_t" mission 2>/dev/null)" = "$id" ] || continue
+        crew_is_terminal "$HARNESS_ROOT" "$_t" || live=1
+      done < <(crew_list "$HARNESS_ROOT" 2>/dev/null)
+      [ "$live" -eq 1 ] && continue
+
+      BLIND="$id ($pending feature(s) pending)"
+      break
+    done
+  fi
+fi
+
+if [ -n "$BLIND" ]; then
+  LIMIT="${HARNESS_BLIND_STOP_LIMIT:-3}"
+  N=0; [ -f "$BLIND_COUNTER" ] && N="$(cat "$BLIND_COUNTER" 2>/dev/null || echo 0)"
+  case "$N" in ''|*[!0-9]*) N=0 ;; esac
+  if [ "$N" -ge "$LIMIT" ]; then
+    # Fail open. A guard that refuses forever is a wedged session.
+    # notify's stderr is NOT suppressed: this path exits 0, so Claude never
+    # delivers stderr to the model, and swallowing it would leave giving up
+    # completely invisible.
+    "$CODE_ROOT/scripts/notify.sh" "Harness" "Turn-end guard failed open after $LIMIT blind stops on $BLIND" || true
+    rm -f "$BLIND_COUNTER" 2>/dev/null || true
+    exit 0
+  fi
+  printf '%s' "$((N + 1))" > "$BLIND_COUNTER" 2>/dev/null || true
+  {
+    echo "[Stop hook] This turn ended blind."
+    echo
+    echo "  $BLIND is executing, nothing is in flight, and nothing is waiting on the captain."
+    echo
+    echo "Do one of these before stopping:"
+    echo "  - dispatch the next feature (./scripts/crew/spawn.sh, or the in-process worker)"
+    echo "  - file the decision you actually need (./scripts/hold.sh open $BLIND --question \"...\")"
+    echo "  - set the mission to paused, if the captain asked you to stop (/pause)"
+  } >&2
+  exit 2
+fi
+rm -f "$BLIND_COUNTER" 2>/dev/null || true
 
 [ "${#PROBLEMS[@]}" -eq 0 ] && exit 0
 

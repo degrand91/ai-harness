@@ -115,4 +115,98 @@ mkmission "$home" m-quiet '{"state":"executing","features":[]}' >/dev/null
 run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
 assert_eq "" "$HOOK_OUT"
 
+# --- §4.0: the blind-stop rule ----------------------------------------------
+. "$HARNESS_ROOT/scripts/lib/crew.sh"
+blind_home="$(mktmphome)"
+mkmission "$blind_home" m-loop '{"state":"executing","features":[{"id":"F001","slug":"a","state":"closed","color":"green","followups":[]},{"id":"F002","slug":"b","state":"pending","color":null,"followups":[]}]}' >/dev/null
+
+it "refuses a stop that ends the loop with a pending feature and nothing in flight"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 2 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "ended blind"
+assert_contains "$HOOK_ERR" "m-loop"
+
+it "allows the stop while a crewmate is in flight on that mission"
+crew_meta_write "$blind_home" T1 project=p mission=m-loop feature=F002 runner_pid=$$
+crew_ledger_append "$blind_home" T1 progress "working"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 0 "$HOOK_RC"
+
+it "refuses again once that crewmate reaches a terminal line"
+crew_ledger_append "$blind_home" T1 "done" "finished"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 2 "$HOOK_RC"
+crew_forget "$blind_home" T1
+
+it "allows the stop when the captain is the one being waited on"
+CLAUDE_PROJECT_DIR="$blind_home" "$HARNESS_ROOT/scripts/hold.sh" open m-loop --question "Which way?" >/dev/null 2>&1
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 0 "$HOOK_RC"
+CLAUDE_PROJECT_DIR="$blind_home" "$HARNESS_ROOT/scripts/hold.sh" answer m-loop DH-001 "this way" >/dev/null 2>&1
+
+it "allows the stop on a paused mission — the captain asked to take over"
+python3 -c "
+import json; p='$blind_home/missions/m-loop/status.json'
+d=json.load(open(p)); d['state']='paused'; json.dump(d,open(p,'w'))"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 0 "$HOOK_RC"
+python3 -c "
+import json; p='$blind_home/missions/m-loop/status.json'
+d=json.load(open(p)); d['state']='executing'; json.dump(d,open(p,'w'))"
+
+it "fails open after a bounded number of refusals rather than wedging the session"
+# A guard that can refuse forever is worse than a loop that ran one feature too
+# many, so it gives up and says so.
+rm -f "$blind_home/state/blind-stop-count"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1" "HARNESS_BLIND_STOP_LIMIT=2"
+assert_rc 2 "$HOOK_RC"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1" "HARNESS_BLIND_STOP_LIMIT=2"
+assert_rc 2 "$HOOK_RC"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1" "HARNESS_BLIND_STOP_LIMIT=2"
+assert_rc 0 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "failed open"
+
+it "giving up resets the counter, so the guard works again next turn"
+assert_file_missing "$blind_home/state/blind-stop-count"
+
+it "the counter resets once the loop is no longer blind"
+python3 -c "
+import json; p='$blind_home/missions/m-loop/status.json'
+d=json.load(open(p))
+d['features'][1]['state']='closed'; d['features'][1]['color']='green'
+json.dump(d,open(p,'w'))"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$blind_home" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 0 "$HOOK_RC"
+assert_file_missing "$blind_home/state/blind-stop-count"
+
+# --- staleness: a rail that fires forever is a rail people turn off ---------
+it "does not refuse a stop for a mission abandoned months ago"
+# Without this bound, one stale mission left `executing` refuses every stop in
+# every future session. Found by pointing the new guard at this repo, where two
+# real missions had been untouched for 105 days.
+stale="$(mktmphome)"
+d="$(mkmission "$stale" m-stale '{"state":"executing","features":[{"id":"F001","slug":"a","state":"pending","color":null,"followups":[]}]}')"
+age_mission "$d" 9000000
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$stale" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 0 "$HOOK_RC"
+
+it "still refuses for the same mission when it is recently active"
+touch "$d/status.json" "$d/log.md"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$stale" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 2 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "ended blind"
+
+it "does not refuse for a stale mission awaiting approval"
+stale2="$(mktmphome)"
+d2="$(mkmission "$stale2" m-old-approve '{"state":"awaiting_approval","features":[]}')"
+age_mission "$d2" 9000000
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$stale2" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 0 "$HOOK_RC"
+
+it "still refuses for a fresh mission awaiting approval with nothing filed"
+touch "$d2/status.json" "$d2/log.md"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$stale2" "HARNESS_NOTIFY_DRYRUN=1"
+assert_rc 2 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "no decision is filed"
+
 finish
