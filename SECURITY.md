@@ -8,7 +8,7 @@ security fixes. See [CHANGELOG.md](CHANGELOG.md) for the release history.
 ## Reporting a Vulnerability
 
 **For sensitive disclosures** (proof-of-concept exploits, secrets in committed state,
-permission bypass): use [GitHub Security Advisories](https://github.com/stefanodegrandis/harness/security/advisories/new)
+permission bypass): use [GitHub Security Advisories](https://github.com/degrand91/ai-harness/security/advisories/new)
 to open a private advisory. Do **not** post sensitive vulnerability details in public issues.
 
 **For non-sensitive security concerns** (general hardening suggestions, documentation

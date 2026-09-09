@@ -239,7 +239,7 @@ Three layers, all consulted at intake:
 
 ```bash
 # Clone the harness repository
-git clone https://github.com/stefanodegrandis/harness.git harness
+git clone https://github.com/degrand91/ai-harness.git harness
 
 # Copy the .claude/ directory into your target project
 cp -r harness/.claude /path/to/your/project/.claude
@@ -261,7 +261,7 @@ The `.claude/settings.json` file sets `agent: orchestrator`, so the session open
 When Anthropic ships official plugin installation support, the `claude-plugin.json` manifest at the repo root is intended to be compatible:
 
 ```bash
-claude plugin install git+https://github.com/stefanodegrandis/harness.git
+claude plugin install git+https://github.com/degrand91/ai-harness.git
 ```
 
 Until then, the manual copy method above is the canonical install path.
