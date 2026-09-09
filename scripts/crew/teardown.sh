@@ -150,6 +150,27 @@ fi
 
 [ -n "$PR_URL" ] && jq --arg u "$PR_URL" '.pr_url = $u' "$PENDING" > "$PENDING.tmp" 2>/dev/null && mv "$PENDING.tmp" "$PENDING"
 
+# ...and on the feature, which outlives this teardown. The pending record is
+# deleted at the bottom of this script and stdout may be scrolling past an
+# operator who is not in the room -- which is the normal case in away mode.
+# Without this the harness opens a pull request and immediately forgets it
+# exists: /fleet cannot show it and pr-poll.sh has nothing to poll.
+if [ -n "$PR_URL" ] && [ -f "$MDIR_STATUS" ]; then
+  if UP="$(jq --arg id "$TASK" --arg u "$PR_URL" '
+        .features = ((.features // []) | map(if .id == $id then .pr_url = $u else . end))
+      ' "$MDIR_STATUS" 2>/dev/null)" && [ -n "$UP" ]; then
+    printf '%s\n' "$UP" > "$MDIR_STATUS"
+  fi
+  # feature-dispatch refuses a feature that is not in features[], so a miss here
+  # means the mission record drifted from the task. Say so rather than dropping
+  # the only pointer to an open PR on the floor.
+  if ! jq -e --arg id "$TASK" '[.features[]? | select(.id == $id and .pr_url)] | length > 0' \
+       "$MDIR_STATUS" >/dev/null 2>&1; then
+    printf 'teardown: %s is not in %s features[]; its PR is only recorded here: %s\n' \
+      "$TASK" "$MISSION" "$PR_URL" >&2
+  fi
+fi
+
 # --- clean up ----------------------------------------------------------------
 if [ -n "$PROJ_PATH" ] && [ -d "$PROJ_PATH" ]; then
   git -C "$PROJ_PATH" worktree remove --force "$WT" >/dev/null 2>&1 || rm -rf "$WT"

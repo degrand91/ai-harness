@@ -27,7 +27,7 @@ it "carries a schema version so consumers can detect a breaking change"
 assert_eq "1" "$(q '.schema')"
 
 it "reports a mission with its normalised state and features"
-mkmission "$home" 2026-08-01-alpha '{"mission_id":"2026-08-01-alpha","title":"Alpha","state":"executing","current_feature":"F002","target_repo":"/p/alpha","features":[{"id":"F001","slug":"one","state":"closed","color":"green","followups":[]},{"id":"F002","slug":"two","state":"in_progress","color":null,"followups":[]}]}' >/dev/null
+mkmission "$home" 2026-08-01-alpha '{"mission_id":"2026-08-01-alpha","title":"Alpha","state":"executing","current_feature":"F002","target_repo":"/p/alpha","features":[{"id":"F001","slug":"one","state":"closed","color":"green","pr_url":"https://gh.test/p/1","followups":[]},{"id":"F002","slug":"two","state":"in_progress","color":null,"followups":[]}]}' >/dev/null
 snap
 assert_eq "1" "$(q '.missions | length')"
 assert_eq "2026-08-01-alpha" "$(q '.missions[0].id')"
@@ -36,6 +36,9 @@ assert_eq "Alpha"            "$(q '.missions[0].title')"
 assert_eq "F002"             "$(q '.missions[0].current_feature')"
 assert_eq "2"                "$(q '.missions[0].features | length')"
 assert_eq "green"            "$(q '.missions[0].features[0].color')"
+# crew teardown records this after a direct-PR delivery; the projection dropping
+# it would put the only pointer to an open PR back out of reach.
+assert_eq "https://gh.test/p/1" "$(q '.missions[0].features[0].pr_url')"
 
 it "normalises a drifted-schema mission like every other consumer"
 mkmission "$home" 2026-08-02-drift '{"status":"in-progress","phase":"feature-loop","features":[]}' >/dev/null
