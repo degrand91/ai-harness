@@ -108,6 +108,70 @@ def open_holds(mission_dir: Path) -> int:
     return sum(1 for f in d.glob("*.json") if f.is_file())
 
 
+def crew_alive(pid: str) -> bool:
+    """True if `pid` names a live process, probed the way reconcile.sh does
+    (`kill -0`) but via a direct syscall rather than a forked `kill`."""
+    if not pid or not pid.isdigit():
+        return False
+    try:
+        os.kill(int(pid), 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except OSError:
+        # e.g. EPERM: the process exists, we just may not signal it — still alive.
+        return True
+
+
+def crew_outcome(ledger_path: Path) -> str | None:
+    """The last done|failed|blocked line in a crewmate's ledger, or None.
+
+    Mirrors `crew_outcome()` in scripts/lib/crew.sh: the ledger's LAST line is
+    not the outcome, because the Stop/SessionEnd hooks append `idle:` and
+    `exited:` after the crewmate itself reports. Read directly rather than
+    shelling out to crew.sh, so a fleet with many crewmates costs one file
+    read each rather than one subprocess each.
+    """
+    if not ledger_path.is_file():
+        return None
+    found = None
+    for line in ledger_path.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        # "<timestamp> <verb>: <note>" — strip the timestamp, then the verb.
+        _, _, rest = line.partition(" ")
+        verb = rest.split(":", 1)[0]
+        if verb in ("done", "failed", "blocked"):
+            found = verb
+    return found
+
+
+def crew_tasks(root: Path) -> list[dict[str, Any]]:
+    """One entry per state/<task>.meta — the fleet's live crewmates.
+
+    Reads state/<task>.meta and state/<task>.ledger directly, exactly like the
+    mission walk above, rather than shelling out to crew.sh per task.
+    """
+    state_dir = root / "state"
+    if not state_dir.is_dir():
+        return []
+    out = []
+    for meta_file in sorted(state_dir.glob("*.meta")):
+        task = meta_file.stem
+        meta = load_json(meta_file) or {}
+        out.append(
+            {
+                "task": task,
+                "mission": meta.get("mission"),
+                "project": meta.get("project"),
+                "outcome": crew_outcome(state_dir / f"{task}.ledger"),
+                "alive": crew_alive(str(meta.get("runner_pid") or "")),
+            }
+        )
+    return out
+
+
 def parse_registry(path: Path) -> list[dict[str, str]]:
     """`- <name> [<mode>[ +yolo]] <path> [allow="..."] - <desc> (added <date>)`
 

@@ -33,6 +33,7 @@ printf '%s' "$SNAP" | jq -r --argjson all "$SHOW_ALL" '
   def pad($n): (.[0:$n-1] + (" " * $n))[0:$n];
 
   ( .projects ) as $projects
+  | ( .crew // [] ) as $crew
   # An unreadable mission is never hidden. It is not "active" — we cannot know
   # that — but it is precisely the mission a human needs to be told about, so it
   # is always shown regardless of the filter.
@@ -43,6 +44,15 @@ printf '%s' "$SNAP" | jq -r --argjson all "$SHOW_ALL" '
         "PROJECTS",
         ( $projects[] | "  " + (.name | pad(22)) + (.mode | pad(14))
                       + (if .yolo == "on" then "+yolo  " else "       " end) + .path ),
+        ""
+      else empty end
+    ),
+    (
+      if ($crew | length) > 0 then
+        "CREW",
+        ( $crew[] | "  " + (.task | pad(16)) + ((.mission // "-") | pad(30))
+                  + ((.project // "-") | pad(14)) + ((.outcome // "working") | pad(10))
+                  + (if .alive then "alive" else "gone" end) ),
         ""
       else empty end
     ),

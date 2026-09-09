@@ -168,4 +168,39 @@ assert_rc 0 "$HOOK_RC"
 it "still emits valid JSON with a corrupt mission in a large fleet"
 printf '%s' "$HOOK_OUT" | jq -e . >/dev/null 2>&1; assert_rc 0 $?
 
+it "reports a live crewmate, reading its outcome from the ledger not its last line"
+# pid 1 always exists; kill -0 on it either succeeds or raises EPERM, and
+# EPERM still means alive — same contract crew.sh's `kill -0` relies on.
+printf '{"task":"F900","mission":"2026-08-01-alpha","project":"alpha","runner_pid":"1"}' > "$home/state/F900.meta"
+printf '%s\n%s\n%s\n' \
+  '2026-08-01T00:00:00Z started: ' \
+  '2026-08-01T00:01:00Z done: shipped it' \
+  '2026-08-01T00:01:01Z idle: ' > "$home/state/F900.ledger"
+snap
+assert_eq "1"                "$(q '.crew | length')"
+assert_eq "F900"             "$(q '.crew[0].task')"
+assert_eq "2026-08-01-alpha" "$(q '.crew[0].mission')"
+assert_eq "alpha"            "$(q '.crew[0].project')"
+assert_eq "done"             "$(q '.crew[0].outcome')"
+assert_eq "true"             "$(q '.crew[0].alive')"
+assert_eq "1"                "$(q '.totals.crew.total')"
+assert_eq "1"                "$(q '.totals.crew.live')"
+
+it "reports null outcome for a crewmate that never reached a terminal line, and a dead runner as not alive"
+printf '{"task":"F901","mission":"2026-08-01-alpha","project":"alpha","runner_pid":"999999"}' > "$home/state/F901.meta"
+printf '2026-08-01T00:00:00Z progress: still going\n' > "$home/state/F901.ledger"
+snap
+assert_eq "2"    "$(q '.crew | length')"
+assert_eq "null" "$(q '.crew[] | select(.task=="F901") | .outcome')"
+assert_eq "false" "$(q '.crew[] | select(.task=="F901") | .alive')"
+assert_eq "2"    "$(q '.totals.crew.total')"
+assert_eq "1"    "$(q '.totals.crew.live')"
+
+it "spawns no subprocess per crewmate either"
+rm -f "$small/state"/*.meta "$small/state"/*.ledger 2>/dev/null
+printf '{"task":"F800","mission":"m","project":"p","runner_pid":"1"}' > "$small/state/F800.meta"
+printf '2026-08-01T00:00:00Z done: x\n' > "$small/state/F800.ledger"
+n_small_crew="$(count_procs "$small")"
+assert_eq "$n_small" "$n_small_crew"
+
 finish

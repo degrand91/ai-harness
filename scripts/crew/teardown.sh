@@ -41,10 +41,32 @@ TASK="${1:-}"; ABANDON=0
 [ -n "$TASK" ] || die "usage: teardown.sh <task> [--abandon]"
 crew_meta_get "$HARNESS_ROOT" "$TASK" task >/dev/null 2>&1 || die "teardown.sh: no such task \"$TASK\"" 1
 
+# LEDGER FIRST, like reconcile.sh. A crewmate that wrote a terminal line has
+# finished writing, whatever its process is still doing — and `claude -p` has
+# been observed lingering for many minutes after committing its work and
+# reporting `done:`. Refusing on process liveness alone let a hung CLI block the
+# whole loop on work that was demonstrably complete.
+#
+# The runner check still applies while the outcome is NOT terminal: that is the
+# real case for "do not destroy a worktree being written to".
 PID="$(crew_meta_get "$HARNESS_ROOT" "$TASK" runner_pid || true)"
+OUTCOME="$(crew_outcome "$HARNESS_ROOT" "$TASK" 2>/dev/null || true)"
 case "$PID" in
   ''|*[!0-9]*) ;;
-  *) kill -0 "$PID" 2>/dev/null && die "teardown.sh: $TASK is still running (runner $PID). Let it finish, or stop it first." ;;
+  *)
+    if kill -0 "$PID" 2>/dev/null; then
+      case "$OUTCOME" in
+        done|failed) ;;   # it has said it is finished; believe the ledger
+        *) die "teardown.sh: $TASK is still working (runner $PID, last: ${OUTCOME:-none}). Let it finish, or stop it first." ;;
+      esac
+      # Its work is landed and its outcome recorded; the process is just
+      # lingering. Stop it so the worktree can be removed cleanly.
+      kill -TERM "$PID" 2>/dev/null || true
+      _n=0
+      while kill -0 "$PID" 2>/dev/null && [ "$_n" -lt 10 ]; do sleep 1; _n=$((_n + 1)); done
+      kill -KILL "$PID" 2>/dev/null || true
+      printf 'teardown: %s had reported %s but its process was still alive; stopped it.\n' "$TASK" "$OUTCOME" >&2
+    fi ;;
 esac
 
 MODE="$(crew_meta_get "$HARNESS_ROOT" "$TASK" mode)"

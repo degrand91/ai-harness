@@ -54,6 +54,30 @@ fleet --json
 printf '%s' "$HOOK_OUT" | jq -e . >/dev/null 2>&1; assert_rc 0 $?
 assert_eq "1" "$(printf '%s' "$HOOK_OUT" | jq -r '.schema')"
 
+it "shows a live crewmate with its mission, project and outcome"
+printf '{"task":"F900","mission":"2026-08-01-alpha","project":"alpha","runner_pid":"1"}' > "$home/state/F900.meta"
+printf '2026-08-01T00:01:00Z done: shipped it\n' > "$home/state/F900.ledger"
+fleet
+assert_contains "$HOOK_OUT" "CREW"
+assert_contains "$HOOK_OUT" "F900"
+assert_contains "$HOOK_OUT" "2026-08-01-alpha"
+assert_contains "$HOOK_OUT" "done"
+
+it "shows a crewmate still working as 'working' rather than blank"
+printf '{"task":"F901","mission":"2026-08-01-alpha","project":"alpha","runner_pid":"999999"}' > "$home/state/F901.meta"
+printf '2026-08-01T00:00:00Z progress: still going\n' > "$home/state/F901.ledger"
+fleet
+assert_contains "$HOOK_OUT" "F901"
+assert_contains "$HOOK_OUT" "working"
+assert_contains "$HOOK_OUT" "gone"
+
+it "hides the CREW section entirely when no crewmate is recorded"
+_home_before_crew_check="$home"
+home="$(mktmphome)"
+fleet
+assert_not_contains "$HOOK_OUT" "CREW"
+home="$_home_before_crew_check"
+
 it "parses no mission state of its own"
 # The contract from fm-fleet-view.sh:3-5. Every fact must come from
 # snapshot.sh; a renderer that reads status.json is a renderer that can drift.
