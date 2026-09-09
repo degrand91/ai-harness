@@ -8,7 +8,7 @@ How the harness keeps going without being nudged, and — more importantly — h
 
 | | Mechanism | Role |
 |---|---|---|
-| **Primary** | The **turn-end guard** (`stop-no-red-status.sh`), a synchronous `Stop` hook | **Refuses** a stop that ends the loop for no reason |
+| **Primary** | The **turn-end guard** (`stop-turnend-guard.sh`), a synchronous `Stop` hook | **Refuses** a stop that ends the loop for no reason |
 | Backstop | The **watcher** (`stop-watch-rearm.sh` + `scripts/watch.sh`), an `asyncRewake` `Stop` hook | Parks on fleet state; wakes on real events, and on continuation only when the guard has failed open |
 
 The ordering matters. Once crewmates are real processes, nearly every wake is an *event*: a ledger line, a PR going green, a stall. The remaining case — the orchestrator ended its turn with an obvious next step and nothing in flight — is an **orchestrator mistake**, and the right response is to refuse that stop, not to resume it forty-five seconds later on a timer.

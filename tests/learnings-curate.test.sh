@@ -19,9 +19,7 @@ cur() {
 old_entry() {  # <kind> <slug> [extra-body]
   local f="$home/learnings/$1/$2.md"
   printf '# %s\n\n%s\n' "$2" "${3:-body}" > "$f"
-  if date -u -d "@0" >/dev/null 2>&1; then ts="$(date -u -d "@$(( $(date +%s) - 200*86400 ))" +%Y%m%d%H%M.%S)"
-  else ts="$(date -u -r "$(( $(date +%s) - 200*86400 ))" +%Y%m%d%H%M.%S)"; fi
-  touch -t "$ts" "$f"
+  age_file "$f" --seconds $(( 200 * 86400 ))
 }
 fresh_entry() { printf '# %s\n\nbody\n' "$2" > "$home/learnings/$1/$2.md"; }
 
@@ -83,9 +81,7 @@ home2="$(mktmphome)"
 mkdir -p "$home2/learnings/anti-patterns" "$home2/learnings/patterns" "$home2/learnings/proposals"
 for i in 1 2 3 4; do
   f="$home2/learnings/anti-patterns/trap-$i.md"; printf '# trap\n' > "$f"
-  if date -u -d "@0" >/dev/null 2>&1; then ts="$(date -u -d "@$(( $(date +%s) - 200*86400 ))" +%Y%m%d%H%M.%S)"
-  else ts="$(date -u -r "$(( $(date +%s) - 200*86400 ))" +%Y%m%d%H%M.%S)"; fi
-  touch -t "$ts" "$f"
+  age_file "$f" --seconds $(( 200 * 86400 ))
 done
 CLAUDE_PROJECT_DIR="$home2" HARNESS_LEARNINGS_BUDGET=1 "$HARNESS_ROOT/scripts/learnings-curate.sh" > /tmp/c4.out 2>&1; rc=$?
 assert_rc 3 "$rc"

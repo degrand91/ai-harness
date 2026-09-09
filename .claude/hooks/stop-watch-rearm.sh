@@ -16,7 +16,7 @@
 # `&` — so Claude's timeout or teardown kills the watcher along with the hook.
 #
 # THE CONTINUATION WAKE IS A BACKSTOP, not the main mechanism. The synchronous
-# turn-end guard (stop-no-red-status.sh) refuses a blind stop while work is
+# turn-end guard (stop-turnend-guard.sh) refuses a blind stop while work is
 # owed; this only covers the case where that guard has failed open.
 #
 # Never writes stdout. Exit 0 is always silent.

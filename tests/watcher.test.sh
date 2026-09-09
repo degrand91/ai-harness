@@ -83,9 +83,7 @@ it "wakes when a live crewmate has been silent past the stall threshold"
 crew_forget "$home" F001
 crew_meta_write "$home" F002 project=p mission=m1 feature=F002 runner_pid=$$
 crew_ledger_append "$home" F002 progress "quiet now"
-older="$(( $(date -u +%s) - 9999 ))"
-if date -u -d "@0" >/dev/null 2>&1; then t="$(date -u -d "@$older" +%Y%m%d%H%M.%S)"; else t="$(date -u -r "$older" +%Y%m%d%H%M.%S)"; fi
-touch -t "$t" "$home/state/F002.ledger"
+age_file "$home/state/F002.ledger" --seconds 9999
 watch1 "$home"
 assert_rc 2 "$HOOK_RC"
 assert_contains "$HOOK_OUT" "stall F002"
@@ -178,12 +176,7 @@ it "does not continuation-wake for a mission abandoned months ago"
 # worst thing it could do. Same recency bound as the turn-end guard.
 stale="$(mktmphome)"
 d="$(mkmission "$stale" m-stale '{"state":"executing","features":[{"id":"F001","state":"pending","color":null,"followups":[]}]}')"
-if date -u -d "@0" >/dev/null 2>&1; then
-  ts="$(date -u -d "@$(( $(date +%s) - 9000000 ))" +%Y%m%d%H%M.%S)"
-else
-  ts="$(date -u -r "$(( $(date +%s) - 9000000 ))" +%Y%m%d%H%M.%S)"
-fi
-touch -t "$ts" "$d/status.json" "$d/log.md"
+age_mission_by "$d" 9000000
 watch1 "$stale"
 assert_rc 0 "$HOOK_RC"
 

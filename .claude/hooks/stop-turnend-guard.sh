@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
-# Stop hook. Refuses to let the session end while a mission is in a state a
-# human would not want left unattended:
+# THE TURN-END GUARD. Refuses to let the session end while a mission is in a
+# state a human would not want left unattended:
+#
+# Renamed from stop-no-red-status.sh: it long ago stopped being only a red-status
+# check, and a name that describes a third of what a file does is a name that
+# makes readers miss the rest.
 #
 #   - a red feature with no follow-up opened for it
 #   - a feature stuck `in_progress` with no outcome colour and no file activity

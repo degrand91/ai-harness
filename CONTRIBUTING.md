@@ -34,7 +34,7 @@ A mission folder is evidence that a change worked once. It is not a regression g
 
 ```sh
 ./tests/run.sh                       # everything
-./tests/run.sh --filter stop-no-red  # one hook
+./tests/run.sh --filter turnend-guard  # one hook
 ./tests/run.sh --list                # what exists
 ./scripts/lint.sh                    # shellcheck (skips cleanly if absent)
 ./scripts/doctor.sh --check          # tools and state roots
@@ -49,7 +49,7 @@ home="$(mktmphome)"
 mkmission "$home" 2026-01-01-demo '{"state":"executing","features":[]}' >/dev/null
 
 it "allows a stop when nothing is red"
-run_hook stop-no-red-status.sh '{"hook_event_name":"Stop"}' "CLAUDE_PROJECT_DIR=$home"
+run_hook stop-turnend-guard.sh '{"hook_event_name":"Stop"}' "CLAUDE_PROJECT_DIR=$home"
 assert_rc 0 "$HOOK_RC"
 
 finish

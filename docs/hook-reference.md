@@ -82,13 +82,13 @@ If no mission log exists (e.g., before any mission has been started), the hook e
 
 ---
 
-## Stop — `stop-no-red-status.sh`
+## Stop — `stop-turnend-guard.sh`
 
 **Trigger.** Fires when the Claude Code session attempts to end cleanly.
 
 **Purpose.** Blocks session end if any active mission has a feature with `color: "red"` and no closed follow-up. Forces the Orchestrator to resolve open failures before leaving.
 
-**Handler.** `.claude/hooks/stop-no-red-status.sh`
+**Handler.** `.claude/hooks/stop-turnend-guard.sh`
 
 **Stdin schema.** Claude Code passes context JSON; the hook discards it with `cat > /dev/null`.
 

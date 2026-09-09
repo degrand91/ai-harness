@@ -1,9 +1,33 @@
 # Plan: harness as central control plane
 
-Status: **Phases 0-4 merged** (`aac9b2a`, `fe1f6d9`, `1047ffa`, `ca0dd56`, `711301f`, `9d7e28b`). **Phase 5 built** on `phase-5-knowledge`. All phases complete.
-Revised twice before build (gap review, issue review); see *Review log*.
-Source of borrowed mechanisms: [kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) @ `40c50ea`
-Supersedes: the four-item draft of the same date.
+Status: **COMPLETE.** All five phases merged, plus four follow-up passes.
+
+| Phase | PR | What |
+|---|---|---|
+| 0 | #1 | test suite, CI, session lock, six hook defects |
+| 1 | #2, #3 | project registry, snapshot layer, inbox, knowledge routing, renderer migration |
+| 2 | #4 | durable decision holds |
+| 3 | #5 | crewmates as headless processes in their own worktrees |
+| 4 | #6 | turn-end guard primary, asyncRewake watcher, away mode |
+| 5 | #7 | learnings lifecycle, memory budget, named leases |
+| — | #8 | five bugs found by the first real crewmate run |
+| — | #9 | README rewrite, crew window rendering, tmux backend verified |
+| — | #10 | **wired the orchestrator to the crew** (it could not reach it) |
+| — | #11 | reconciled the deep docs; labelled every protocol's status |
+| — | #12 | collapsed the bash/jq/python seams |
+
+**Deviations from this plan, and why** — each is marked in place below:
+
+- §3.1 `trust.sh` — **not needed**. Headless mode skips the workspace-trust
+  dialog, which the spike proved before any code was written.
+- §3.3c `usage.sh` — folded into `run.sh`, which reads cost straight from the
+  stream-json result event rather than scraping a transcript.
+- §4.1 `user-prompt-reset-epoch.sh` — merged into `user-prompt-restore.sh`; both
+  jobs mean "the captain spoke", and splitting them would give that fact two
+  owners.
+- §5.4 retire the in-process worker — **withdrawn**; the condition was vacuous
+  and the goal was wrong.
+- §1.1 `project-mode.sh` — named `project.sh`, since it also lists and adds.
 
 **Goal.** The harness becomes the single place from which all AI project work is
 started, watched, decided, and remembered — not a per-mission tool that happens
@@ -30,7 +54,7 @@ Four habits from firstmate that are worth more than any single feature:
    Help text cannot drift from the header comment because it *is* the header.
 3. **Fail closed on ambiguity.** `fm-send.sh` refuses to run unless `FM_HOME` is
    explicit; `fm-startup-memory-budget.sh` errors on a malformed value rather
-   than inferring a default. Contrast `stop-no-red-status.sh:31`, which infers
+   than inferring a default. Contrast `stop-turnend-guard.sh:31`, which infers
    `"unknown"` and sails straight past the mission it was meant to guard.
 4. **Two-layer commands.** One script emits a stable JSON contract; renderers
    consume it and never parse state themselves (`fm-fleet-view.sh:3-5`).
@@ -95,7 +119,7 @@ The two defects below are both one-line fixture tests. Neither was noticed.
 
 ### 0.1 — status.json schema drift silently disables the Stop guard
 
-38 of 39 missions use `.state`. The most recent one uses `.status` + `.phase`. `stop-no-red-status.sh:31` reads `.state // "unknown"`;
+38 of 39 missions use `.state`. The most recent one uses `.status` + `.phase`. `stop-turnend-guard.sh:31` reads `.state // "unknown"`;
 `"unknown"` is absent from the skip `case`, so it falls through to a
 `.features[] | select(.color == "red")` filter — and that mission's features
 carry `scrutiny: "PASS"` with no `color` key at all. The guard reports clean on
@@ -156,7 +180,7 @@ compares.
   lists its own additions; a script with no allow entry prompts on every call.**
 
 ### 0.4 — The stuck-feature check had no age bound
-`stop-no-red-status.sh` documented "stuck `in_progress` for more than 1 hour"
+`stop-turnend-guard.sh` documented "stuck `in_progress` for more than 1 hour"
 but contained no age test at all, so it blocked the stop on *any* executing
 mission with an in-progress feature — during normal operation, not just
 abandonment.
@@ -182,7 +206,7 @@ data from `CLAUDE_PROJECT_DIR`, and a missing library is a loud refusal.
 - `scripts/lint.sh`: 35 shell files clean under shellcheck (4 findings fixed,
   2 of them pre-existing).
 - §0.1 regression confirmed to bite: reverting the guard to read `.state`
-  directly fails `hook-stop-no-red-status.test.sh`.
+  directly fails `hook-stop-turnend-guard.test.sh`.
 - CI runs the suite on ubuntu-latest and macos-latest, plus shellcheck
   `--strict` on Ubuntu.
 
@@ -355,7 +379,7 @@ One file per open decision, `missions/<id>/decisions/DH-001.json`:
 - `.claude/skills/decide/SKILL.md` (new) — `/decide` walks open holds across
   **all** projects, one at a time, in impact order
 - `session-start-inject-status.sh` — inject open holds verbatim, first
-- `stop-no-red-status.sh` — block if normalised state is `awaiting_approval` and
+- `stop-turnend-guard.sh` — block if normalised state is `awaiting_approval` and
   no unanswered hold exists on disk (the orchestrator asked in prose and lost it)
 - `scripts/snapshot.sh` — holds become part of the fleet contract
 - Rule in `protocols/orchestrator.md`: *a blocking question is not asked until it is filed.*
@@ -678,7 +702,7 @@ orchestrator ended its turn with an obvious agent-owned next step and nothing in
 flight — is an orchestrator *mistake*, and the right fix is to refuse that stop,
 not to resume it on a timer.
 
-**4.0 — The turn-end guard is primary.** `stop-no-red-status.sh` becomes
+**4.0 — The turn-end guard is primary.** `stop-turnend-guard.sh` becomes
 `stop-turnend-guard.sh` and gains one rule: block (exit 2, reason on stderr)
 when a mission is `executing`, no crewmate is live, no blocking hold is open,
 and a feature is pending — "you ended blind; dispatch F003, or set `paused`, or
@@ -713,7 +737,9 @@ and `/resume` (new, tiny) make that a one-word gesture; the rule lives in
 **Files:** `scripts/watch.sh` (park loop), `.claude/hooks/stop-watch-rearm.sh`
 (scope + identity + single-flight, then runs the loop in the **foreground** of the
 hook's process tree — never `&`, so Claude's teardown kills it),
-`.claude/hooks/user-prompt-reset-epoch.sh`, `.claude/skills/{pause,resume}/SKILL.md`,
+`.claude/hooks/user-prompt-restore.sh` (one hook, two jobs: restore the
+  pre-compaction carry and clear the watcher epoch — both mean "the captain
+  spoke", and splitting them would give that fact two owners), `.claude/skills/{pause,resume}/SKILL.md`,
 `.claude/settings.json`, `protocols/continuity.md`. settings.json allow:
 `Bash(./scripts/watch.sh *)`, `Skill(pause)`, `Skill(resume)`.
 

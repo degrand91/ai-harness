@@ -9,7 +9,7 @@
   - Mission 2026-05-23-my-mission: red features without follow-ups: F003
 ```
 
-**Cause.** `stop-no-red-status.sh` reads every `missions/*/status.json` and exits 2 if any active mission contains a feature with `color: "red"` and no closed follow-up.
+**Cause.** `stop-turnend-guard.sh` reads every `missions/*/status.json` and exits 2 if any active mission contains a feature with `color: "red"` and no closed follow-up.
 
 **Fix options (pick one):**
 

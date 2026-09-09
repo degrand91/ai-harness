@@ -51,6 +51,7 @@ BRANCH="$(crew_meta_get "$HARNESS_ROOT" "$TASK" branch)"
 PROJECT="$(crew_meta_get "$HARNESS_ROOT" "$TASK" project)"
 MISSION="$(crew_meta_get "$HARNESS_ROOT" "$TASK" mission)"
 MDIR_STATUS="$HARNESS_ROOT/missions/$MISSION/status.json"
+MDIR_BRIEFS="$HARNESS_ROOT/missions/$MISSION/briefs"
 PENDING="$HARNESS_ROOT/state/$TASK.close-pending"
 
 LAST="$(crew_outcome "$HARNESS_ROOT" "$TASK" 2>/dev/null || true)"
@@ -139,6 +140,8 @@ fi
 # spend. run.sh writes state/<task>.usage.json from the stream-json result
 # event; without this the mission's token block stayed at zero and /fleet
 # reported a fleet that had cost nothing.
+# shellcheck source=../lib/spend.sh
+. "$CODE_ROOT/scripts/lib/spend.sh"
 USAGE="$HARNESS_ROOT/state/$TASK.usage.json"
 SFILE="$MDIR_STATUS"
 if [ -f "$USAGE" ] && [ -f "$SFILE" ]; then
@@ -155,6 +158,26 @@ if [ -f "$USAGE" ] && [ -f "$SFILE" ]; then
         | .cost_usd = (((.cost_usd // 0)) + ($u.cost_usd // 0))
       ' "$SFILE" "$USAGE" 2>/dev/null)" && [ -n "$UP" ]; then
     printf '%s\n' "$UP" > "$SFILE"
+  fi
+fi
+
+# Today's spend, so a daily cap can see it. The mission's own cost_usd
+# accumulates over its whole life and cannot answer "what have I spent today".
+if [ -f "$USAGE" ]; then
+  spend_record "$HARNESS_ROOT" "$(jq -r '.cost_usd // 0' "$USAGE" 2>/dev/null || echo 0)" || true
+fi
+
+# A scout's report is the only thing that survives it: the branch is discarded,
+# so the report must be lifted out of the worktree-scoped brief directory before
+# anything is removed.
+if [ "$KIND" = "scout" ]; then
+  _rep="$MDIR_BRIEFS/$TASK-handoff.md"
+  if [ -f "$_rep" ]; then
+    mkdir -p "$HARNESS_ROOT/missions/$MISSION/reports" 2>/dev/null || true
+    cp "$_rep" "$HARNESS_ROOT/missions/$MISSION/reports/$TASK.md" \
+      && printf 'Report kept at missions/%s/reports/%s.md\n' "$MISSION" "$TASK"
+  else
+    printf 'teardown: scout %s wrote no report at %s\n' "$TASK" "$_rep" >&2
   fi
 fi
 

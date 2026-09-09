@@ -73,7 +73,7 @@ claude --agent orchestrator -p "..." > mission-output.txt 2>mission-errors.log
 
 Hooks (`PostToolUse`, `Stop`, `SessionStart`, `SubagentStop`) run as child processes. Their stdout and stderr inherit the parent's file descriptors, so they appear interleaved with session output unless the caller redirects them separately.
 
-The `stop-no-red-status.sh` hook exits non-zero if any mission is in a red state. In headless mode this causes `claude` to exit with a non-zero code, which CI pipelines can treat as a failure signal.
+The `stop-turnend-guard.sh` hook exits non-zero if any mission is in a red state. In headless mode this causes `claude` to exit with a non-zero code, which CI pipelines can treat as a failure signal.
 
 ---
 

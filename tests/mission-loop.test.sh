@@ -25,7 +25,7 @@ guard() {
   local errf; errf="$(mktemp)"; HOOK_RC=0
   printf '{"hook_event_name":"Stop","session_id":"s"}' | \
     env CLAUDE_PROJECT_DIR="$home" HARNESS_NOTIFY_DRYRUN=1 \
-    "$HARNESS_ROOT/.claude/hooks/stop-no-red-status.sh" >/dev/null 2>"$errf" || HOOK_RC=$?
+    "$HARNESS_ROOT/.claude/hooks/stop-turnend-guard.sh" >/dev/null 2>"$errf" || HOOK_RC=$?
   HOOK_ERR="$(cat "$errf")"; rm -f "$errf"; export HOOK_ERR HOOK_RC
 }
 fstate() { jq -r --arg f "$1" '[.features[]|select(.id==$f)]|.[0].state' "$home/missions/$M/status.json"; }

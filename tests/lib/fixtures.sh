@@ -123,6 +123,47 @@ mkmission() {
   printf '%s\n' "$home/missions/$id"
 }
 
+# --- time ------------------------------------------------------------------
+# THE SAME-SECOND TRAP. Fixtures written in one test run share a timestamp, so
+# any assertion about "newest" or "oldest" is undefined and passes by luck until
+# a different filesystem or platform decides otherwise. It has bitten three
+# times in this repo. These make the relative order explicit, so the trap stops
+# being available.
+#
+#   age_file <path>... --seconds <n>   set mtime to n seconds ago
+#   touch_now <path>...                set mtime to now
+#
+# Portable across BSD and GNU touch, which take different flags.
+_stamp_for() {  # <epoch>
+  if date -u -d "@0" >/dev/null 2>&1; then
+    date -u -d "@$1" +%Y%m%d%H%M.%S          # GNU
+  else
+    date -u -r "$1" +%Y%m%d%H%M.%S           # BSD
+  fi
+}
+
+age_file() {
+  local secs=0 paths=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --seconds) secs="${2:?age_file: --seconds needs a value}"; shift 2 ;;
+      *) paths+=("$1"); shift ;;
+    esac
+  done
+  [ "${#paths[@]}" -gt 0 ] || return 0
+  local stamp; stamp="$(_stamp_for "$(( $(date -u +%s) - secs ))")"
+  local p
+  for p in "${paths[@]}"; do [ -e "$p" ] && touch -t "$stamp" "$p"; done
+}
+
+touch_now() { local p; for p in "$@"; do [ -e "$p" ] && touch "$p"; done; }
+
+# age_mission <mission-dir> <seconds-ago> — the whole mission at once.
+age_mission_by() {
+  local d="${1:?}" secs="${2:?}"
+  age_file "$d/status.json" "$d/log.md" --seconds "$secs"
+}
+
 # --- hook invocation --------------------------------------------------------
 # run_hook <hook-name> <stdin-json> [env assignments...]
 # Sets HOOK_OUT, HOOK_ERR, HOOK_RC. Never aborts the test file on nonzero.
