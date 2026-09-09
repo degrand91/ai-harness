@@ -10,7 +10,16 @@
 
 set -euo pipefail
 
-HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Code comes from BASH_SOURCE, missions from CLAUDE_PROJECT_DIR (or the cwd when
+# it looks like a harness home). Resolving both from the script's own location
+# made this unusable against any home but its own checkout.
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then HARNESS_ROOT="$CLAUDE_PROJECT_DIR"
+elif [ -d "${PWD}/missions" ];  then HARNESS_ROOT="$PWD"
+else                                 HARNESS_ROOT="$CODE_ROOT"; fi
+
+# shellcheck source=lib/status-read.sh
+. "${CODE_ROOT}/scripts/lib/status-read.sh"
 MISSIONS_DIR="${HARNESS_ROOT}/missions"
 
 # ── arg parsing ───────────────────────────────────────────────────────────────
@@ -72,7 +81,7 @@ resolve_mission() {
     local sj="${dir}/status.json"
     [[ -f "$sj" ]] || continue
     local st
-    st=$(jq -r '.state // "unknown"' "$sj" 2>/dev/null || true)
+    st=$(status_state "$sj" 2>/dev/null || true)
     if [[ "$st" != "closed" && "$st" != "abandoned" ]]; then
       best_open="$(basename "$dir")"
       break  # ls -t gives newest first
@@ -107,9 +116,21 @@ render() {
 
   # Parse top-level fields
   local state current_feature chain_target
-  state=$(jq -r '.state // "unknown"' "$sj")
-  current_feature=$(jq -r '.current_feature // "—"' "$sj")
-  chain_target=$(jq -r '.chain_target // ""' "$sj")
+  state=$(status_state "$sj" 2>/dev/null || true); [ -n "$state" ] || state="unknown"
+
+  # A mission whose state cannot be read has nothing else worth reading either.
+  # Say so plainly rather than letting jq's parse errors reach the operator.
+  if [[ "$state" == "unknown" ]]; then
+    printf '%b%s%b\n' "$BOLD" "──────────────────────────────────────────────" "$RESET"
+    printf ' %bMission:%b  %s\n' "$BOLD" "$RESET" "$mid"
+    printf ' %bState:%b    unknown — status.json is malformed or uses an unrecognised vocabulary\n' "$BOLD" "$RESET"
+    printf ' %bFile:%b     %s\n' "$BOLD" "$RESET" "$sj"
+    printf '%b%s%b\n' "$BOLD" "──────────────────────────────────────────────" "$RESET"
+    return 0
+  fi
+
+  current_feature=$(jq -r '.current_feature // "—"' "$sj" 2>/dev/null || echo "—")
+  chain_target=$(jq -r '.chain_target // ""' "$sj" 2>/dev/null || true)
 
   local sep="──────────────────────────────────────────────"
 

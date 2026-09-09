@@ -4,7 +4,16 @@
 
 set -euo pipefail
 
-HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Code comes from BASH_SOURCE, missions from CLAUDE_PROJECT_DIR (or the cwd when
+# it looks like a harness home). Resolving both from the script's own location
+# made this unusable against any home but its own checkout.
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then HARNESS_ROOT="$CLAUDE_PROJECT_DIR"
+elif [ -d "${PWD}/missions" ];  then HARNESS_ROOT="$PWD"
+else                                 HARNESS_ROOT="$CODE_ROOT"; fi
+
+# shellcheck source=lib/status-read.sh
+. "${CODE_ROOT}/scripts/lib/status-read.sh"
 MISSIONS_DIR="${HARNESS_ROOT}/missions"
 
 [[ $# -lt 1 ]] && { echo "Usage: $(basename "$0") <mission-id>" >&2; exit 1; }
@@ -49,7 +58,7 @@ STATUS_DATA=""   # lines: "FID\tstate\tcolor"
 STATUS_IDS_LIST=""
 
 if [[ -f "$STATUS_FILE" ]]; then
-  MISSION_STATE=$(jq -r '.state // "unknown"' "$STATUS_FILE")
+  MISSION_STATE=$(status_state "$STATUS_FILE" 2>/dev/null || true); [ -n "$MISSION_STATE" ] || MISSION_STATE="unknown"
   CURRENT_FEATURE=$(jq -r '.current_feature // "-"' "$STATUS_FILE")
   while IFS=$'\t' read -r fid fstate fcolor; do
     [[ -n "$fid" ]] || continue

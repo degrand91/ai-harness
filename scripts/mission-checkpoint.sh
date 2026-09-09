@@ -10,7 +10,16 @@
 
 set -euo pipefail
 
-HARNESS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CODE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Code comes from BASH_SOURCE, missions from CLAUDE_PROJECT_DIR (or the cwd when
+# it looks like a harness home). Resolving both from the script's own location
+# made this unusable against any home but its own checkout.
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then HARNESS_ROOT="$CLAUDE_PROJECT_DIR"
+elif [ -d "${PWD}/missions" ];  then HARNESS_ROOT="$PWD"
+else                                 HARNESS_ROOT="$CODE_ROOT"; fi
+
+# shellcheck source=lib/status-read.sh
+. "${CODE_ROOT}/scripts/lib/status-read.sh"
 MISSIONS_DIR="${HARNESS_ROOT}/missions"
 
 # ── arg validation ─────────────────────────────────────────────────────────────
@@ -41,7 +50,8 @@ if [[ ! -f "$STATUS_FILE" ]]; then
 fi
 
 # ── read status.json ───────────────────────────────────────────────────────────
-MISSION_STATE="$(jq -r '.state // "unknown"' "$STATUS_FILE")"
+MISSION_STATE="$(status_state "$STATUS_FILE" 2>/dev/null || true)"
+[ -n "$MISSION_STATE" ] || MISSION_STATE="unknown"
 CURRENT_FEATURE_FROM_STATUS="$(jq -r '.current_feature // ""' "$STATUS_FILE")"
 
 # ── compute completed_features (state == closed) ───────────────────────────────
