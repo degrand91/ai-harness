@@ -26,3 +26,7 @@ missions/
 data/
 state/
 config/
+
+# Python
+__pycache__/
+*.pyc
