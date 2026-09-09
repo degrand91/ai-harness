@@ -41,6 +41,10 @@ assert_contains "$HOOK_OUT" "executing"
 assert_not_contains "$HOOK_OUT" "unknown"
 
 it "mission-tui picks a drifted mission as the active one"
+# The picker orders by status.json mtime. Both fixtures are written in the same
+# instant, so without an explicit touch the order is undefined — this passed on
+# macOS and failed on Linux purely by luck of the filesystem.
+touch "$home/missions/m-drift/status.json"
 run_in_home mission-tui.sh
 assert_rc 0 "$HOOK_RC"
 assert_contains "$HOOK_OUT" "m-drift"
