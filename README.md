@@ -86,7 +86,7 @@ Registered per project in `data/projects.md`:
 
 | Mode | Delivery |
 |---|---|
-| `no-mistakes` | push → PR → the `no-mistakes` gate → merge authority |
+| `no-mistakes` | the project's own `no-mistakes check` must pass, then push + PR |
 | `direct-PR` | push + PR, no gate pipeline |
 | `local-only` | local branch, guarded fast-forward merge, never a remote |
 
@@ -135,7 +135,7 @@ No framework: `bash`, `jq` and coreutils are all the harness itself requires, so
 
 Phases 0–5 complete. The crew path has been run end to end against a real model, through both the tmux backend and directly; `docs/verification/crew-spike.md` records which Claude Code behaviours it depends on and how they were checked.
 
-Known gaps: the `no-mistakes` gate is unverified here (that mode degrades to `direct-PR` plus a filed decision until the tool is installed), and concurrency above 1 is deliberately unimplemented.
+Known gap: concurrency above 1 is deliberately unimplemented. Away mode's daemon, escalation ladder and wedge alarm have been run unattended to expiry on a compressed clock (`docs/verification/away-mode-drill.md`), not yet over a real overnight stretch.
 
 ## Contributing and License
 

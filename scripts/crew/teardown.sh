@@ -17,9 +17,13 @@
 # have deviated, on purpose):
 #   direct-PR    push the branch, open a PR
 #   local-only   guarded fast-forward into the project's default branch
-#   no-mistakes  DEGRADED: the gate tool is unverified here, so this pushes and
-#                opens a PR and files a blocking decision instead of guessing at
-#                an invocation. See docs/verification/crew-spike.md (e).
+#   no-mistakes  run the project's own no-mistakes gate in the worktree FIRST;
+#                deliver as direct-PR only if it passes. Findings block, keeping
+#                the branch and worktree, and file a decision. A project with no
+#                usable gate degrades to direct-PR and files a decision -- it is
+#                never reported as gated, because `no-mistakes check` on an
+#                unconfigured project passes vacuously.
+#                See docs/verification/no-mistakes-gate.md.
 # `+yolo` is the only posture that merges unattended.
 
 set -uo pipefail
@@ -29,6 +33,8 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$CODE_ROOT}"
 . "$CODE_ROOT/scripts/lib/crew.sh"
 # shellcheck source=backend.sh
 . "$CODE_ROOT/scripts/crew/backend.sh"
+# shellcheck source=../lib/gate.sh
+. "$CODE_ROOT/scripts/lib/gate.sh"
 
 die() { printf '%s\n' "$1" >&2; exit "${2:-2}"; }
 
@@ -132,14 +138,37 @@ else
     direct-PR)   land_direct_pr && LANDED=1 ;;
     local-only)  land_local_only && LANDED=1 ;;
     no-mistakes)
-      if land_direct_pr; then
-        LANDED=1
-        "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
-          --question "$TASK is registered no-mistakes, but the gate tool is not verified on this machine. Run the gate by hand on ${PR_URL:-the PR}, or approve merging without it?" \
-          --options "run the gate by hand,merge without the gate" \
-          --recommend "run the gate by hand — the registered posture asked for it" >/dev/null 2>&1 || true
-        printf 'no-mistakes degraded to direct-PR; a decision has been filed (see docs/verification/crew-spike.md).\n' >&2
-      fi ;;
+      # The gate runs BEFORE landing, in the worktree, while the crewmate's
+      # changes are still isolated. Gating after the PR is open only tells the
+      # operator what they already merged.
+      GATE_OUT="$(gate_run "$WT" 2>&1)"; GATE_RC=$?
+      case "$GATE_RC" in
+        0)
+          [ -n "$GATE_OUT" ] && printf '%s\n' "$GATE_OUT" >&2
+          printf 'no-mistakes gate passed for %s.\n' "$TASK" >&2
+          land_direct_pr && LANDED=1 ;;
+        1)
+          # Findings block delivery. Nothing is pushed and the worktree stays,
+          # so the crewmate's branch is still there to fix.
+          printf 'teardown: the no-mistakes gate found blocking issues in %s:\n%s\n' "$TASK" "$GATE_OUT" >&2
+          "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
+            --question "$TASK failed its no-mistakes gate. Send it back to the crewmate, or override and deliver anyway?" \
+            --options "send it back,override and deliver" \
+            --recommend "send it back — the gate is the reason this project is registered no-mistakes" >/dev/null 2>&1 || true
+          ;;
+        *)
+          # No usable gate. Deliver as direct-PR, but never report this as
+          # gated: an unconfigured project makes `check` a no-op that always
+          # passes, so silence here would be indistinguishable from success.
+          if land_direct_pr; then
+            LANDED=1
+            "$CODE_ROOT/scripts/hold.sh" open "$MISSION" \
+              --question "$TASK is registered no-mistakes, but $PROJECT has no usable gate (needs no-mistakes in node_modules and a .no-mistakes.json). Run the gate by hand on ${PR_URL:-the PR}, or approve merging without it?" \
+              --options "run the gate by hand,merge without the gate" \
+              --recommend "run the gate by hand — the registered posture asked for it" >/dev/null 2>&1 || true
+            printf 'no-mistakes degraded to direct-PR: no usable gate in %s. A decision has been filed.\n' "$PROJECT" >&2
+          fi ;;
+      esac ;;
   esac
 fi
 
@@ -149,6 +178,27 @@ if [ "$LANDED" -eq 0 ]; then
 fi
 
 [ -n "$PR_URL" ] && jq --arg u "$PR_URL" '.pr_url = $u' "$PENDING" > "$PENDING.tmp" 2>/dev/null && mv "$PENDING.tmp" "$PENDING"
+
+# ...and on the feature, which outlives this teardown. The pending record is
+# deleted at the bottom of this script and stdout may be scrolling past an
+# operator who is not in the room -- which is the normal case in away mode.
+# Without this the harness opens a pull request and immediately forgets it
+# exists: /fleet cannot show it and pr-poll.sh has nothing to poll.
+if [ -n "$PR_URL" ] && [ -f "$MDIR_STATUS" ]; then
+  if UP="$(jq --arg id "$TASK" --arg u "$PR_URL" '
+        .features = ((.features // []) | map(if .id == $id then .pr_url = $u else . end))
+      ' "$MDIR_STATUS" 2>/dev/null)" && [ -n "$UP" ]; then
+    printf '%s\n' "$UP" > "$MDIR_STATUS"
+  fi
+  # feature-dispatch refuses a feature that is not in features[], so a miss here
+  # means the mission record drifted from the task. Say so rather than dropping
+  # the only pointer to an open PR on the floor.
+  if ! jq -e --arg id "$TASK" '[.features[]? | select(.id == $id and .pr_url)] | length > 0' \
+       "$MDIR_STATUS" >/dev/null 2>&1; then
+    printf 'teardown: %s is not in %s features[]; its PR is only recorded here: %s\n' \
+      "$TASK" "$MISSION" "$PR_URL" >&2
+  fi
+fi
 
 # --- clean up ----------------------------------------------------------------
 if [ -n "$PROJ_PATH" ] && [ -d "$PROJ_PATH" ]; then

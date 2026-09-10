@@ -11,7 +11,7 @@ changes.
 | b | `-p` with `--disallowed-tools` — no hang, no prompt | **PASS** |
 | c | Hooks in the worktree's `.claude/settings.local.json` fire under `-p` | **PASS** |
 | d | `--output-format stream-json` yields `session_id`, `usage`, `total_cost_usd` | **PASS** |
-| e | The `no-mistakes` gate invocation | **NOT VERIFIED — tool not installed** |
+| e | The `no-mistakes` gate invocation | **VERIFIED** — see [no-mistakes-gate.md](no-mistakes-gate.md) |
 
 ## New finding: the prompt must come from stdin
 
@@ -77,12 +77,12 @@ every launch pays for the system prompt, global CLAUDE.md and hook context. The
 floor per crewmate turn is cents, not fractions of a cent. Phase 1's
 `config/spend-cap-daily` should be set with that in mind.
 
-## (e) no-mistakes — not verified
+## (e) no-mistakes — verified 2026-09-09
 
-`no-mistakes` is not installed on this machine (`scripts/doctor.sh` reports it
-missing), so the gate invocation and its status-reading contract are unverified.
+Verified against no-mistakes@0.61.2: **[no-mistakes-gate.md](no-mistakes-gate.md)**.
 
-Per the plan's stated fallback, a project registered `[no-mistakes]` **degrades
-to `direct-PR` and files a blocking decision** rather than guessing at a gate
-command. `scripts/crew/teardown.sh` implements that degradation; when the tool is
-installed, verify the invocation here and remove it.
+The short version is that the tool is not a PR-approval service but a local AST
+graph, shipped as a per-project devDependency — and that `check` on an
+unconfigured project reports nothing and exits 0. `scripts/lib/gate.sh` owns the
+gate and refuses to call that a pass; the degradation to `direct-PR` plus a
+filed decision is now reserved for projects that genuinely have no gate.

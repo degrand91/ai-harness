@@ -75,7 +75,10 @@ printf '%s' "$SNAP" | jq -r --argjson all "$SHOW_ALL" '
           | select(.state != "unknown")
           | "    " + .id + ": "
             + ([ .features[]
-                 | .id + "/" + (.color // .state // "?") ] | join("  "))
+                 | .id + "/" + (.color // .state // "?")
+                   # An open PR is the one thing an operator returning from away
+                   # mode has to act on, so it goes in the line, not a drill-down.
+                   + (if .pr_url then " " + .pr_url else "" end) ] | join("  "))
         )
       end
     ),
