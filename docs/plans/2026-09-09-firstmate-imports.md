@@ -450,6 +450,17 @@ swallow a trailing positional prompt, so the launch prompt goes on **stdin**.
 (b) came out better than assumed: a disallowed tool is *absent from the model's
 tool list*, so `--dangerously-skip-permissions` is not needed anywhere.
 
+**Update, 2026-09-09 — (e) now verified**, in
+`docs/verification/no-mistakes-gate.md`. The tool turned out to be a local AST
+graph shipped as a per-project devDependency, not the PR-approval service this
+plan assumed, so the invocation this row asked for does not exist in that form.
+The finding that mattered: `no-mistakes check` on a project with no
+`.no-mistakes.json` reports empty findings and exits 0, so a gate wired
+straight to it can never fail. `scripts/lib/gate.sh` owns the gate, runs the
+project's own copy in the worktree **before** landing, and reports an absent or
+unconfigured gate as unavailable — never as a pass. The degrade to `direct-PR`
+plus a filed decision is now reserved for projects that genuinely have no gate.
+
 ### 3.0 (original) — Spike first (half a day, no production code)
 The headless design below rests on five behaviours of Claude Code 2.1.x that are
 documented but not yet exercised here. Verify each in a throwaway worktree

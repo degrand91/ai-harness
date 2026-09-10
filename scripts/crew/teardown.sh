@@ -17,9 +17,13 @@
 # have deviated, on purpose):
 #   direct-PR    push the branch, open a PR
 #   local-only   guarded fast-forward into the project's default branch
-#   no-mistakes  DEGRADED: the gate tool is unverified here, so this pushes and
-#                opens a PR and files a blocking decision instead of guessing at
-#                an invocation. See docs/verification/crew-spike.md (e).
+#   no-mistakes  run the project's own no-mistakes gate in the worktree FIRST;
+#                deliver as direct-PR only if it passes. Findings block, keeping
+#                the branch and worktree, and file a decision. A project with no
+#                usable gate degrades to direct-PR and files a decision -- it is
+#                never reported as gated, because `no-mistakes check` on an
+#                unconfigured project passes vacuously.
+#                See docs/verification/no-mistakes-gate.md.
 # `+yolo` is the only posture that merges unattended.
 
 set -uo pipefail
