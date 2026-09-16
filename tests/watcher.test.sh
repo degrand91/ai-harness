@@ -56,9 +56,18 @@ assert_rc 0 "$HOOK_RC"
 rm -f "$home/state/.watch-off"
 
 it "stands down in away mode — the AFK daemon owns the watcher"
-: > "$home/state/.afk"
+# A real marker, as afk.sh start writes it. An empty file used to do here, but
+# the watcher now reads the deadline out of it.
+printf '{"entered_at":"2026-09-09T00:00:00Z","until_epoch":%s}\n' "$(( $(date -u +%s) + 3600 ))" > "$home/state/.afk"
 watch1 "$home"
 assert_rc 0 "$HOOK_RC"
+
+it "and takes back over once away mode has expired"
+# The daemon stops at its deadline but the marker survives until the operator
+# returns. Standing down on the bare marker left nothing supervising at all.
+printf '{"entered_at":"2026-09-09T00:00:00Z","until_epoch":%s}\n' "$(( $(date -u +%s) - 60 ))" > "$home/state/.afk"
+watch1 "$home"
+assert_rc 2 "$HOOK_RC"
 rm -f "$home/state/.afk"
 
 it "does not wake to continue while a crewmate is in flight on that mission"

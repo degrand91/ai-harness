@@ -6,8 +6,8 @@
       "name": "OpenAI Image Generation",
       "type": "image",
       "provider": "openai",
-      "enabled": false,
-      "description": "Generate and edit images using DALL-E 3 and GPT Image via the OpenAI API.",
+      "enabled": true,
+      "description": "Generate and edit images using the GPT Image model family (gpt-image-1, gpt-image-1-mini, gpt-image-2, gpt-image-2.5-*) via the OpenAI API. DALL-E models are retired and will return 'model does not exist'.",
       "env_vars": {
         "OPENAI_API_KEY": {
           "required": true,
@@ -15,11 +15,30 @@
         }
       },
       "endpoint": "https://api.openai.com/v1/images/generations",
-      "capabilities": ["generate", "edit", "variation"],
+      "capabilities": [
+        "generate",
+        "edit",
+        "variation"
+      ],
       "usage": {
-        "command": "curl -s -H 'Authorization: Bearer $OPENAI_API_KEY' -H 'Content-Type: application/json' -d '{\"model\":\"dall-e-3\",\"prompt\":\"<PROMPT>\",\"n\":1,\"size\":\"1024x1024\"}' https://api.openai.com/v1/images/generations",
-        "output_format": "JSON with url field",
-        "cost_per_call": "~$0.04 per image (1024x1024)"
+        "command": "curl -s -H 'Authorization: Bearer $OPENAI_API_KEY' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-image-1\",\"prompt\":\"<PROMPT>\",\"n\":1,\"size\":\"1024x1024\",\"quality\":\"low\"}' https://api.openai.com/v1/images/generations | python3 -c 'import json,sys,base64; open(\"out.png\",\"wb\").write(base64.b64decode(json.load(sys.stdin)[\"data\"][0][\"b64_json\"]))'",
+        "output_format": "JSON with data[0].b64_json (base64 PNG) \u2014 no URL field; decode to file",
+        "models": [
+          "gpt-image-1",
+          "gpt-image-1-mini",
+          "gpt-image-1.5",
+          "gpt-image-2",
+          "gpt-image-2.5-flare",
+          "gpt-image-2.5-sunburst",
+          "chatgpt-image-latest"
+        ],
+        "quality_options": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "cost_per_call": "~$0.01-0.04 per 1024x1024 image depending on quality (low \u2248 272 output image tokens)",
+        "verified": "2026-09-16 \u2014 smoke test with gpt-image-1 quality=low succeeded"
       },
       "docs_url": "https://platform.openai.com/docs/api-reference/images"
     },
@@ -37,7 +56,11 @@
         }
       },
       "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
-      "capabilities": ["generate", "edit", "text-rendering"],
+      "capabilities": [
+        "generate",
+        "edit",
+        "text-rendering"
+      ],
       "usage": {
         "command": "curl -s -H 'Content-Type: application/json' -d '{\"contents\":[{\"parts\":[{\"text\":\"<PROMPT>\"}]}],\"generationConfig\":{\"responseModalities\":[\"TEXT\",\"IMAGE\"]}}' 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=$GOOGLE_API_KEY'",
         "output_format": "JSON with candidates[].content.parts[].inlineData.data (base64 PNG)",
@@ -59,7 +82,10 @@
         }
       },
       "endpoint": "https://api.lemonfox.ai/v1/audio",
-      "capabilities": ["text-to-speech", "speech-to-text"],
+      "capabilities": [
+        "text-to-speech",
+        "speech-to-text"
+      ],
       "usage": {
         "command": "curl -s -H 'Authorization: Bearer $LEMONFOX_API_KEY' -H 'Content-Type: application/json' -d '{\"model\":\"tts-1\",\"input\":\"<TEXT>\",\"voice\":\"alloy\"}' https://api.lemonfox.ai/v1/audio/speech --output speech.mp3",
         "output_format": "Binary audio file (mp3 for TTS); JSON transcript for STT",

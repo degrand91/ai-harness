@@ -135,7 +135,16 @@ def crew_outcome(ledger_path: Path) -> str | None:
     if not ledger_path.is_file():
         return None
     found = None
-    for line in ledger_path.read_text().splitlines():
+    raw = ledger_path.read_text()
+    # Only NEWLINE-TERMINATED lines count. `crew_ledger_append` appends one line
+    # per write and documents that a line is never torn -- so a trailing chunk
+    # with no newline is a write that did not complete, not an outcome. The bash
+    # side gets this for free (`while read` drops it); str.splitlines() does not,
+    # and the two must not disagree. Asserted by tests/crew-outcome-parity.test.sh.
+    lines = raw.splitlines()
+    if lines and not raw.endswith("\n"):
+        lines.pop()
+    for line in lines:
         line = line.strip()
         if not line:
             continue

@@ -41,7 +41,6 @@ command -v tmux       >/dev/null 2>&1 && ok "tmux"       || warn "tmux"       "n
 command -v shellcheck >/dev/null 2>&1 && ok "shellcheck" || warn "shellcheck" "brew install shellcheck"
 command -v claude     >/dev/null 2>&1 && ok "claude ($(claude --version 2>&1 | head -n1))" \
                                       || warn "claude" "needed to launch crewmates (Phase 3)"
-command -v no-mistakes >/dev/null 2>&1 && ok "no-mistakes" || warn "no-mistakes" "needed for [no-mistakes] delivery mode (Phase 3)"
 
 printf '\nState roots\n'
 for d in missions data state config; do
@@ -76,6 +75,27 @@ if [ -f "$REGISTRY" ]; then
       printf '  orphans  %s: %s\n' "$(basename "$path")" "$orphans"
     else
       ok "$(basename "$path")"
+    fi
+  done < "$REGISTRY"
+
+  # Delivery gates. no-mistakes is a per-project devDependency, not a global
+  # tool, so "is it on PATH" is the wrong question -- and a project that has it
+  # WITHOUT a .no-mistakes.json still has no gate, because `check` then reports
+  # nothing and exits 0. See docs/verification/no-mistakes-gate.md.
+  # shellcheck source=lib/gate.sh
+  . "$CODE_ROOT/scripts/lib/gate.sh"
+  gated=0
+  while IFS= read -r line; do
+    case "$line" in -\ *) ;; *) continue ;; esac
+    case "$line" in *"[no-mistakes"*) ;; *) continue ;; esac
+    [ "$gated" -eq 0 ] && printf '\nDelivery gates\n' && gated=1
+    name="$(printf '%s' "$line" | sed -nE 's@^- +([^ ]+).*@\1@p')"
+    path="$(printf '%s' "$line" | sed -nE 's@.*\] +([^ ]+).*@\1@p')"
+    path="${path/#\~/$HOME}"
+    if [ -n "$path" ] && gate_available "$path"; then
+      ok "$name (no-mistakes gate)"
+    else
+      warn "$name" "registered [no-mistakes] but has no usable gate — needs no-mistakes in node_modules and a .no-mistakes.json; delivery degrades to direct-PR and files a decision"
     fi
   done < "$REGISTRY"
 fi

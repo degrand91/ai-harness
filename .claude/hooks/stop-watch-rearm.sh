@@ -31,6 +31,9 @@ LOCKF="$STATE/watch.lock"
 
 INPUT="$(cat 2>/dev/null || true)"
 
+# shellcheck source=../../scripts/lib/afk-state.sh
+. "$CODE_ROOT/scripts/lib/afk-state.sh" 2>/dev/null || exit 0
+
 # --- scope -------------------------------------------------------------------
 # Both markers are checked on HARNESS_ROOT, the DATA root. Checking the code
 # root would be meaningless: it is always this repo, so the hook would arm in
@@ -38,7 +41,9 @@ INPUT="$(cat 2>/dev/null || true)"
 [ -d "$HARNESS_ROOT/missions" ] || exit 0
 [ -f "$HARNESS_ROOT/.claude/agents/orchestrator.md" ] || exit 0
 [ -f "$STATE/.watch-off" ] && exit 0
-[ -f "$STATE/.afk" ] && exit 0
+# Only while away mode is IN FORCE: an expired marker means the daemon has
+# stopped and the watcher must take back over. See scripts/lib/afk-state.sh.
+afk_in_force "$HARNESS_ROOT" && exit 0
 
 # --- identity ----------------------------------------------------------------
 SESSION_ID="$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)"

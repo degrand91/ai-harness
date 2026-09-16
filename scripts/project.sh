@@ -102,7 +102,7 @@ The captain's standing delivery posture per project. One line each. Hand-editabl
 
     - <name> [<mode>[ +yolo]] <path> [allow="<cmd>, <cmd>"] - <description> (added <date>)
 
-Modes: no-mistakes (pipeline -> PR -> gate) · direct-PR (push + PR) · local-only (no remote).
+Modes: no-mistakes (the project's own gate must pass, then push + PR) · direct-PR (push + PR) · local-only (no remote).
 +yolo grants merge autonomy. allow= extends a crewmate's tool allowlist at spawn.
 
 This records what was REGISTERED, never how a given task ships: that is decided

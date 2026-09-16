@@ -76,6 +76,9 @@ def build(root: Path) -> dict:
                         "slug": f.get("slug"),
                         "state": f.get("state") or f.get("status"),
                         "color": f.get("color"),
+                        # Written by crew teardown after a direct-PR delivery.
+                        # Dropping it here would put the PR back out of reach.
+                        "pr_url": f.get("pr_url"),
                         "followups": (
                             len(f["followups"]) if isinstance(f.get("followups"), list)
                             else (f.get("followups") or 0)
