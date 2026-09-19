@@ -37,6 +37,31 @@ run_s scripts/doctor.sh --check
 assert_rc 0 "$HOOK_RC"
 assert_contains "$HOOK_OUT" "Optional tools"
 
+it "doctor says nothing about gates when no project is registered [no-mistakes]"
+gh_home="$(mktmphome)"
+printf -- '- plain [local-only] %s - x (added 2026-01-01)\n' "$gh_home" > "$gh_home/data/projects.md"
+out="$(CLAUDE_PROJECT_DIR="$gh_home" "$HARNESS_ROOT/scripts/doctor.sh" --check 2>&1)"
+assert_not_contains "$out" "Delivery gates"
+
+it "doctor warns that a [no-mistakes] project without a usable gate has none"
+# The tool is a per-project devDependency, so "is it on PATH" is the wrong
+# question; and having it without a .no-mistakes.json is still no gate, because
+# `check` then reports nothing and exits 0.
+printf -- '- gated [no-mistakes] %s - x (added 2026-01-01)\n' "$gh_home" >> "$gh_home/data/projects.md"
+out="$(CLAUDE_PROJECT_DIR="$gh_home" "$HARNESS_ROOT/scripts/doctor.sh" --check 2>&1)"
+assert_contains "$out" "Delivery gates"
+assert_contains "$out" "no usable gate"
+
+it "and reports one that does have a gate as ok"
+mkdir -p "$gh_home/node_modules/.bin"
+cat > "$gh_home/node_modules/.bin/no-mistakes" <<'STUB'
+#!/usr/bin/env bash
+[ "$1 $2" = "config resolve" ] && printf '{"configPath":".no-mistakes.json"}\n'
+STUB
+chmod +x "$gh_home/node_modules/.bin/no-mistakes"
+out="$(CLAUDE_PROJECT_DIR="$gh_home" "$HARNESS_ROOT/scripts/doctor.sh" --check 2>&1)"
+assert_contains "$out" "gated (no-mistakes gate)"
+
 it "doctor rejects an unknown option rather than ignoring it"
 run_s scripts/doctor.sh --wat
 assert_rc 2 "$HOOK_RC"

@@ -39,6 +39,8 @@ MISSIONS="$HARNESS_ROOT/missions"
 . "$CODE_ROOT/scripts/lib/crew.sh"
 # shellcheck source=lib/holds.sh
 . "$CODE_ROOT/scripts/lib/holds.sh"
+# shellcheck source=lib/afk-state.sh
+. "$CODE_ROOT/scripts/lib/afk-state.sh"
 
 POLL="${HARNESS_WATCH_POLL:-30}"
 GRACE="${HARNESS_WATCH_GRACE:-300}"
@@ -60,7 +62,10 @@ case "${1:-}" in
   *) printf 'watch.sh: unknown option %s\n' "$1" >&2; exit 2 ;;
 esac
 
-stand_down() { [ -f "$STATE/.watch-off" ] || [ -f "$STATE/.afk" ]; }
+# Away mode stands the watcher down only while it is IN FORCE. Once its
+# deadline passes the daemon has stopped ticking, so standing down on the bare
+# marker would leave nothing supervising at all -- see scripts/lib/afk-state.sh.
+stand_down() { [ -f "$STATE/.watch-off" ] || afk_in_force "$HARNESS_ROOT"; }
 
 # Is any mission blocked on the captain right now?
 blocking_hold_open() {

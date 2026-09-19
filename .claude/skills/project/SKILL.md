@@ -23,7 +23,7 @@ So: a task may deviate from its project's registered mode when there is a reason
 
 | Mode | Means |
 |---|---|
-| `no-mistakes` | full pipeline → PR → the no-mistakes gate → the configured merge authority |
+| `no-mistakes` | the project's own `no-mistakes check` must pass in the worktree, then push and open a PR. A project without a usable gate (`no-mistakes` in `node_modules` **and** a `.no-mistakes.json`) degrades to `direct-PR` and files a decision — `./scripts/doctor.sh` reports which projects are actually gated |
 | `direct-PR` | push and open a PR, no gate pipeline |
 | `local-only` | local branch, guarded local merge, never a remote |
 

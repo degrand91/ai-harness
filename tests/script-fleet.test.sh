@@ -17,11 +17,14 @@ assert_rc 0 "$HOOK_RC"
 assert_contains "$HOOK_OUT" "No missions"
 
 it "lists an active mission with its state and current feature"
-mkmission "$home" 2026-08-01-alpha '{"title":"Alpha work","state":"executing","current_feature":"F002","features":[{"id":"F001","slug":"one","state":"closed","color":"green","followups":[]},{"id":"F002","slug":"two","state":"in_progress","color":null,"followups":[]}]}' >/dev/null
+mkmission "$home" 2026-08-01-alpha '{"title":"Alpha work","state":"executing","current_feature":"F002","features":[{"id":"F001","slug":"one","state":"closed","color":"green","pr_url":"https://gh.test/p/1","followups":[]},{"id":"F002","slug":"two","state":"in_progress","color":null,"followups":[]}]}' >/dev/null
 fleet
 assert_contains "$HOOK_OUT" "2026-08-01-alpha"
 assert_contains "$HOOK_OUT" "executing"
 assert_contains "$HOOK_OUT" "F002"
+
+it "shows an open PR inline, since that is what a returning operator must act on"
+assert_contains "$HOOK_OUT" "https://gh.test/p/1"
 
 it "hides closed missions by default and shows them with --all"
 mkmission "$home" 2026-08-02-done '{"state":"closed","features":[]}' >/dev/null
