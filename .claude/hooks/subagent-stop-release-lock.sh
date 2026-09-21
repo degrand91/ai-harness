@@ -2,8 +2,9 @@
 #
 # SubagentStop hook — releases the serial-spawn lock when a subagent finishes.
 #
-# - Non-explorer subagents: clears in_flight_non_explorer → false.
-# - Explorer subagents: decrements explorer_count (floor at 0).
+# - explorer / scout:  decrements explorer_count (floor at 0).
+# - validators:        decrements validator_count (floor at 0).
+# - anything else:     clears in_flight_non_explorer → false.
 #
 # Always exits 0 (non-blocking).
 
@@ -23,8 +24,10 @@ fi
 
 IN_FLIGHT="$(jq -r '.in_flight_non_explorer // false' "$STATE_FILE" 2>/dev/null || echo false)"
 EXPLORER_COUNT="$(jq -r '.explorer_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
+VALIDATOR_COUNT="$(jq -r '.validator_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
 case "$IN_FLIGHT" in true|false) ;; *) IN_FLIGHT=false ;; esac
 case "$EXPLORER_COUNT" in ''|*[!0-9]*) EXPLORER_COUNT=0 ;; esac
+case "$VALIDATOR_COUNT" in ''|*[!0-9]*) VALIDATOR_COUNT=0 ;; esac
 
 # ---------------------------------------------------------------------------
 # Helper: write state atomically via temp file + mv
@@ -32,22 +35,27 @@ case "$EXPLORER_COUNT" in ''|*[!0-9]*) EXPLORER_COUNT=0 ;; esac
 write_state() {
   local in_flight="$1"
   local explorer_count="$2"
+  local validator_count="$3"
   local now
   now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   local tmp
   tmp="$(mktemp "${STATE_FILE}.tmp.XXXXXX")"
-  printf '{"in_flight_non_explorer":%s,"explorer_count":%d,"updated_at":"%s"}\n' \
-    "$in_flight" "$explorer_count" "$now" > "$tmp"
+  printf '{"in_flight_non_explorer":%s,"explorer_count":%d,"validator_count":%d,"updated_at":"%s"}\n' \
+    "$in_flight" "$explorer_count" "$validator_count" "$now" > "$tmp"
   mv "$tmp" "$STATE_FILE"
 }
 
-if [ "$AGENT_TYPE" = "explorer" ]; then
-  # Decrement explorer_count, floor at 0
-  NEW_COUNT=$(( EXPLORER_COUNT > 0 ? EXPLORER_COUNT - 1 : 0 ))
-  write_state "$IN_FLIGHT" "$NEW_COUNT"
-else
-  # Non-explorer (or unknown): release the non-explorer lock
-  write_state false "$EXPLORER_COUNT"
-fi
+case "$AGENT_TYPE" in
+  explorer|scout)
+    write_state "$IN_FLIGHT" $(( EXPLORER_COUNT > 0 ? EXPLORER_COUNT - 1 : 0 )) "$VALIDATOR_COUNT"
+    ;;
+  scrutiny-validator|scrutiny-validator-external|user-testing-validator)
+    write_state "$IN_FLIGHT" "$EXPLORER_COUNT" $(( VALIDATOR_COUNT > 0 ? VALIDATOR_COUNT - 1 : 0 ))
+    ;;
+  *)
+    # Worker (or unknown): release the writing slot.
+    write_state false "$EXPLORER_COUNT" "$VALIDATOR_COUNT"
+    ;;
+esac
 
 exit 0

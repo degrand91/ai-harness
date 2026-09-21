@@ -2,6 +2,9 @@
 name: explorer
 description: Read-only reconnaissance for a single, narrow question about a codebase or external resource. Answers in structured form (Question / Answer / Evidence / Caveats). Use during the planning phase to map a target repo. May be spawned in parallel — explorers are the only subagents allowed to fan out concurrently. NOT for implementation or validation.
 model: haiku
+effort: low
+maxTurns: 25
+omitClaudeMd: true
 permissionMode: default
 tools: Read, Grep, Glob, WebFetch, WebSearch
 disallowedTools: Write, Edit, Bash

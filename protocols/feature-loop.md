@@ -11,7 +11,7 @@ A mission records **`execution`** in `status.json` at intake and never changes i
 | | `crew` | `subagent` |
 |---|---|---|
 | The worker is | a headless `claude -p` process in its own git worktree | an in-process `Agent` call |
-| The orchestrator during work | **free** — it can answer you, watch other projects, decide | blocked inside the tool call |
+| The orchestrator during work | **free** — it can answer you, watch other projects, decide | **free** — the subagent runs in the background; the orchestrator ends its turn and is woken by the completion notification (never by polling) |
 | Requires | the `target_repo` to be a **registered project** | nothing |
 | Dispatched by | `scripts/feature-dispatch.sh` end to end | `feature-dispatch.sh` prints the spec; **you** call the Agent tool |
 | Survives a session death | yes — worktree and ledger reconcile | no |
@@ -46,7 +46,7 @@ Never from the process. Read `crew_outcome` — `done`, `failed` or `blocked` �
 
 ### Validation runs against the live worktree
 
-The worktree **persists through validation**. Validators stay in-process subagents of the orchestrator — read-only, adversarial, short — and are given the **diff and the handoff only**. Because a crewmate is a separate process, its reasoning is physically out of reach, which turns a convention into a guarantee.
+The worktree **persists through validation**. Validators stay in-process subagents of the orchestrator — read-only, adversarial, short — and are given the **diff and the handoff only**. Scrutiny and User-Testing for the same feature are spawned **together**; their verdicts are written to the feature folder by the `SubagentStop` hook. Because a crewmate is a separate process, its reasoning is physically out of reach, which turns a convention into a guarantee.
 
 Point the validator at `crew_meta_get <home> <task> worktree`. Do not tear down first: teardown removes the very thing being validated.
 

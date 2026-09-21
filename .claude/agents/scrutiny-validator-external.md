@@ -1,7 +1,10 @@
 ---
 name: scrutiny-validator-external
-description: Adversarial code review on a non-Claude provider via MCP — used when HARNESS_EXTERNAL_VALIDATOR_PROVIDER env var is set. Otherwise the orchestrator routes to the default scrutiny-validator (Haiku).
-model: haiku
+description: Adversarial code review on a non-Claude provider via MCP — used when HARNESS_EXTERNAL_VALIDATOR_PROVIDER env var is set. Otherwise the orchestrator routes to the default scrutiny-validator (Sonnet).
+model: sonnet
+effort: medium
+maxTurns: 60
+omitClaudeMd: true
 permissionMode: default
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
@@ -9,7 +12,7 @@ color: red
 mcpServers:
   # OPERATOR: Uncomment and configure one of the example MCP server entries below
   # to route Scrutiny through your external provider. Until then, this agent
-  # behaves like the default scrutiny-validator (Haiku, no external connection).
+  # behaves like the default scrutiny-validator (Sonnet, no external connection).
   #
   # Example — OpenAI Codex via MCP:
   # codex:

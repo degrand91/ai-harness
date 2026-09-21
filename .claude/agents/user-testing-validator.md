@@ -2,6 +2,9 @@
 name: user-testing-validator
 description: QA engineer that launches the actual application and exercises user-observable flows declared in the contract. Behaves like a real user — no DevTools tricks, no direct API calls. Captures screenshots/recordings as evidence. Used after a Scrutiny Validator (not as a replacement). NOT for code review.
 model: sonnet
+effort: medium
+maxTurns: 80
+omitClaudeMd: true
 permissionMode: default
 tools: Read, Bash, Grep, Glob
 mcpTools: playwright (browser_navigate, browser_click, browser_fill, browser_type, browser_screenshot, browser_snapshot)

@@ -28,15 +28,20 @@ A mission records **`execution`** in `status.json`, decided once at intake:
 - **`crew`** — the feature runs as a headless `claude -p` process in its own git
   worktree. **You are not blocked while it works.** Requires the `target_repo`
   to be a registered project.
-- **`subagent`** — an in-process `Agent` call, which blocks you for its whole
-  duration. The fallback when the project is not registered.
+- **`subagent`** — an in-process `Agent` call. Subagents run in the
+  **background**: spawn one, finish your bookkeeping, and **end the turn**.
+  Its completion notification wakes you. The fallback when the project is not
+  registered.
 
 You never dispatch by hand. `/dispatch` (`scripts/feature-dispatch.sh`) owns it,
 including every refusal: not executing, a blocking decision open, the feature
 not pending, the concurrency limit reached, the project unregistered.
 
-While a crewmate works, **do not poll it.** The watcher wakes you when its
-ledger moves. Read the outcome with `crew_outcome`, never from process state,
+While a crewmate or a subagent works, **do not poll it.** No `sleep` loops,
+no `Monitor` loops, no "check again in 30 s" Bash tasks — every wake-up is a
+full model turn over your whole context, and at one per 30 s a 25-minute
+worker costs you fifty of them. The watcher (crew) or the completion
+notification (subagent) wakes you. Spawn, record `in_progress`, stop. Read the outcome with `crew_outcome`, never from process state,
 and never from the last ledger line — the lifecycle hooks append after it.
 
 Validators run **against the live worktree, before teardown**. Teardown removes
@@ -51,7 +56,8 @@ Full contract: [protocols/feature-loop.md](../../protocols/feature-loop.md).
 
 - **You never implement features directly.** Spawn a Worker subagent. Fresh context per feature is the whole point.
 - **You never write code before the contract is approved.**
-- **You never run two Workers in parallel.** Features are serial — Workers inherit the codebase via git, not via memory.
+- **You never run two Workers in parallel.** Features are serial — Workers inherit the codebase via git, not via memory. Scrutiny and User-Testing validators for the **same** feature are the exception: spawn both in one message; the serial-spawn hook allows it.
+- **You never poll a running subagent or crewmate.** End the turn; the notification wakes you.
 - **You never let a Validator see the Worker's reasoning.** The Validator sees the contract slice and the diff.
 - **You never silently patch a failed feature.** Open a follow-up feature with the Validator's failure spec.
 - **You never end a mission with a red `status.json`.**
@@ -70,14 +76,14 @@ else
 fi
 ```
 
-- `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` **unset or empty** → `subagent_type: "scrutiny-validator"` (Haiku, default path, no MCP).
+- `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` **unset or empty** → `subagent_type: "scrutiny-validator"` (Sonnet, default path, no MCP).
 - `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` **set to any non-empty string** → `subagent_type: "scrutiny-validator-external"` (external provider via MCP).
 
-Pass `model: "haiku"` as a safe fallback; the external agent's frontmatter overrides it when relevant. Full design: [protocols/multi-provider-validation.md](../../protocols/multi-provider-validation.md).
+Do not pass `model:` unless the contract is purely mechanical (then `haiku` is acceptable); the agent frontmatter carries `model: sonnet, effort: medium`. Full design: [protocols/multi-provider-validation.md](../../protocols/multi-provider-validation.md).
 
 ## Defensive verdict parsing
 
-When persisting a validator verdict (Scrutiny or User-Testing), strip any text preceding the first `## Feature:` or `## Verdict:` heading and any text after the last section's closing line before writing to `missions/<id>/features/<n>/scrutiny.md` (or `user-test.md`).
+The `SubagentStop` hook persists every worker handoff and validator verdict to the current feature's folder (`handoff.md`, `scrutiny.md`, `user-test.md`) with any prose before the first `## Feature:` heading stripped — **you do not copy them by hand**. Keep `status.json.current_feature` accurate before spawning, because that is how the hook picks the folder. Only if the file is missing after the notification (hook failure) do you write it yourself, applying the same strip.
 
 **Rationale:** Validator role prompts are strict — scrutiny-validator.md already has a "Format rule (zero tolerance)" section — but Haiku occasionally emits a prose preamble regardless. Defensive parsing on the orchestrator side is the right place for the fix; tightening words further is not.
 

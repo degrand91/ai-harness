@@ -2,6 +2,16 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-09-21
+
+### Changed (throughput review — "slow but accurate")
+
+- **No more polling.** The orchestrator prompt, `CLAUDE.md` and the feature-loop / crew protocols now say it plainly: subagents run in the background; spawn, record state, end the turn, and the completion notification wakes you. The old `until … sleep 30` wait loops cost one full orchestrator turn every 32 s (≈50 per worker) and produced 70–80 % of every mission log.
+- **Validators overlap.** `pre-agent-spawn-serial.sh` grew a third class: `scrutiny-validator`, `scrutiny-validator-external` and `user-testing-validator` may run together (they are read-only) but never alongside a worker, and a worker is refused while a validator is still reading. `subagent-stop-release-lock.sh` releases per class; state file gains `validator_count`. `scout` is treated like `explorer`.
+- **Verdicts persist by hook.** `subagent-stop-record.sh` writes each worker handoff / validator verdict to the current feature's `handoff.md` / `scrutiny.md` / `user-test.md` (keyed off `status.json.current_feature`, prose before `## Feature:` stripped, re-runs appended). Non-harness agent stops are no longer logged. The raw payload is dumped to `state/last-subagent-stop.json` for inspection.
+- **Turn-end guard** treats a held, recent serial-spawn lock as work in flight, so ending the turn while a subagent works is never flagged as a blind stop.
+- **Agent frontmatter**: every subagent sets `omitClaudeMd: true` (the harness manual and the user's global rules were ~12k tokens of preamble per spawn); `effort` (worker high, validators medium, explorer/scout low) and `maxTurns` (60/80/25/30). Scrutiny validators move from `haiku` to `sonnet`, matching `protocols/model-routing.md` and the recorded hallucination anti-pattern. The worker is told to read the **target repo's** `CLAUDE.md` instead.
+
 ## [1.1.0] — 2026-05-23
 
 ### Added (imported from ECC under MIT)
