@@ -67,14 +67,14 @@ For each feature in order:
 2. **Spawn a Worker subagent** via the Agent tool:
    ```
    subagent_type: "worker"
-   model: "sonnet"   (or "haiku" for trivial features)
+   model: "sonnet"   (or "haiku" for trivial features) — then END THE TURN; the completion notification wakes you
    description: "Worker — F003 add-oauth-routes"
    prompt: <feature spec> + <contract slice> + <previous handoff if any>
    ```
    The Worker's system prompt is loaded from `.claude/agents/worker.md` automatically. **Do not inline the worker.md content** — pass only the feature-specific task.
-3. **Record the handoff** to `missions/<id>/features/<n>/handoff.md`.
+3. **The handoff lands in** `missions/<id>/features/<n>/handoff.md` via the `SubagentStop` hook (it keys off `status.json.current_feature`). Read it; do not re-copy it.
 4. **Spawn a Scrutiny Validator subagent** with `subagent_type: "scrutiny-validator"`. Pass the contract slice and the diff. It does **not** see the worker's reasoning.
-5. **If the feature has user-observable behavior**, spawn a **User-Testing Validator** with `subagent_type: "user-testing-validator"`. Pass the user-facing contract slice and the launch recipe.
+5. **If the feature has user-observable behavior**, spawn a **User-Testing Validator** with `subagent_type: "user-testing-validator"` **in the same message as the Scrutiny Validator** — they are read-only and run concurrently. Pass the user-facing contract slice and the launch recipe. Then end the turn. Verdicts land in `scrutiny.md` / `user-test.md` via the hook.
 6. **Decide**:
    - All validators green → mark feature complete. Advance.
    - Any validator red → open a follow-up feature using the Validator's follow-up spec. Re-enter the loop. Do **not** patch the original feature in place.
@@ -95,13 +95,15 @@ You spawn these via the Agent tool. Their system prompts live in `.claude/agents
 | `subagent_type` | When to spawn | Default model | Tools |
 |---|---|---|---|
 | `worker` | Implement one feature | sonnet | full implementation set |
-| `scrutiny-validator` | After every feature handoff | haiku | read-only + Bash (no Write/Edit) |
+| `scrutiny-validator` | After every feature handoff | sonnet (effort medium) | read-only + Bash (no Write/Edit) |
 | `user-testing-validator` | After scrutiny, if user-observable | sonnet | Bash + Read (no Write/Edit) |
 | `explorer` | Parallel read-only recon during planning | haiku | Read/Grep/Glob/WebFetch (no Bash, no Write/Edit) |
 | `scout` | Cross-mission memory consulted at intake | haiku | Read/Grep/Glob/WebFetch/WebSearch (no Bash, no Write/Edit) |
-| `scrutiny-validator-external` | Adversarial review via external provider (env-gated) | haiku (MCP) | Read/Grep/Glob/Bash (no Write/Edit) |
+| `scrutiny-validator-external` | Adversarial review via external provider (env-gated) | sonnet (MCP) | Read/Grep/Glob/Bash (no Write/Edit) |
 
-Workers and Validators have **fresh context** every spawn. They do not see your chat history.
+Workers and Validators have **fresh context** every spawn. They do not see your chat history, and (`omitClaudeMd: true`) they do not load this file or the user's global rules — everything they need travels in the spawn prompt. Workers read the **target repo's** own `CLAUDE.md`.
+
+Subagents run in the **background**. Spawn, update `status.json`, end the turn; the completion notification wakes you. Never poll with `sleep`/`Monitor` loops.
 
 In addition to the core mission-loop agents above, the harness includes **8 ECC-ported standalone agents** (architect, code-reviewer, doc-updater, harness-optimizer, refactor-cleaner, security-reviewer, silent-failure-hunter, tdd-guide). These are not part of the feature loop — they are task-specific assistants you can spawn on demand. See [AGENTS.md](AGENTS.md) for the full table of models and tools.
 
@@ -109,7 +111,7 @@ In addition to the core mission-loop agents above, the harness includes **8 ECC-
 
 At scrutiny-spawn time, inspect the `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` environment variable:
 
-- **Unset or empty** → spawn `subagent_type: "scrutiny-validator"` (Haiku, default, no MCP).
+- **Unset or empty** → spawn `subagent_type: "scrutiny-validator"` (Sonnet, default, no MCP).
 - **Set to any non-empty string** → spawn `subagent_type: "scrutiny-validator-external"` (external provider via MCP).
 
 The value is a human-readable label (e.g. `"openai"`, `"gemini"`); the harness only tests for presence, not content. See [protocols/multi-provider-validation.md](protocols/multi-provider-validation.md) for the full design.
@@ -142,7 +144,7 @@ missions/2026-05-23-add-oauth/
 └── post-mortem.md        # written at close by /mission-review
 ```
 
-`status.json` and `log.md` are the **broadcast channel**. The `PostToolUse` hook appends to `log.md` automatically on every edit inside `missions/<id>/`. You still own `status.json` writes. Token usage is captured automatically: the `SubagentStop` hook reads `input_tokens` / `output_tokens` from the event payload and accumulates them into the `tokens` block of the active mission's `status.json` by role.
+`status.json` and `log.md` are the **broadcast channel**. The `PostToolUse` hook appends to `log.md` automatically on every edit inside `missions/<id>/`. You still own `status.json` writes. Token usage is captured automatically: the `SubagentStop` hook sums `usage` from the subagent's transcript (`agent_transcript_path` — the payload itself carries no usage on 2.1.278) and accumulates `input`, `output` and `cache_read` into the `tokens` block of the active mission's `status.json` by role. The same hook persists the subagent's `## Feature:` report to the current feature folder.
 
 ---
 
@@ -167,7 +169,7 @@ Features run **one at a time**. The next worker inherits the codebase **via git*
 Parallelism is allowed only for:
 - Codebase exploration (read-only, via `explorer` subagents — these are the **only** subagents you may spawn concurrently)
 - API research / doc reads
-- Scrutiny + User-Testing Validators on the **same** feature
+- Scrutiny + User-Testing Validators on the **same** feature (spawn both in one message; the serial-spawn hook allows validators to overlap each other, never a worker)
 
 If you find yourself wanting to run two Workers in parallel, you are wrong. Re-read this section.
 
@@ -200,6 +202,7 @@ Three layers, all consulted at intake:
 - **Never let the Orchestrator implement a feature directly.** Spawn a Worker.
 - **Never write code before the validation contract exists and is approved.**
 - **Never run two Workers in parallel.**
+- **Never poll a running subagent.** End the turn and let the completion notification wake you.
 - **Never let a Validator see the Worker's reasoning.** It sees the contract and the diff.
 - **Never silently patch a failed feature.** Open a follow-up feature.
 - **Never end a mission with a red `status.json`.** (The `Stop` hook will block you.)

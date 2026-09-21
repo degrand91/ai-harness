@@ -29,11 +29,11 @@ See [protocols/feature-loop.md](protocols/feature-loop.md) and
 | **Orchestrator** | (session-level via `.claude/settings.json:agent`) | Mission-long | Opus | Full Claude Code | `project` — `.claude/agent-memory/orchestrator/` |
 | **Worker** | `worker` | One feature | Sonnet | Read, Write, Edit, Bash, Grep, Glob | none (fresh per spawn) |
 | *(crewmate)* | *not a subagent* | One brief | from the brief | a `-p` allowlist, not a tool list | none — its worktree and ledger are its memory |
-| **Scrutiny Validator** | `scrutiny-validator` | One feature | Haiku | Read, Grep, Glob, Bash (no Write/Edit) | none (adversarial) |
+| **Scrutiny Validator** | `scrutiny-validator` | One feature | Sonnet (effort medium; Haiku only for all-mechanical contracts) | Read, Grep, Glob, Bash (no Write/Edit) | none (adversarial) |
 | **User-Testing Validator** | `user-testing-validator` | One feature | Sonnet | Bash, Read, Grep, Glob (no Write/Edit) | none |
 | **Explorer** | `explorer` | One question | Haiku | Read, Grep, Glob, WebFetch, WebSearch (no Bash, no Write/Edit) | none |
 | **Scout** | `scout` | Cross-mission (long-lived) | Haiku | Read, Grep, Glob, WebFetch, WebSearch | `project` — `.claude/agent-memory/scout/` |
-| **Scrutiny Validator (external)** | `scrutiny-validator-external` | One feature (env-gated) | Haiku (via MCP to external provider) | Read, Grep, Glob, Bash (no Write/Edit) | none |
+| **Scrutiny Validator (external)** | `scrutiny-validator-external` | One feature (env-gated) | Sonnet (via MCP to external provider) | Read, Grep, Glob, Bash (no Write/Edit) | none |
 
 ## How to spawn one
 

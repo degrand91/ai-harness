@@ -8,14 +8,16 @@ read and interrupt.
 
 ## Why this shape
 
-With in-process subagents the orchestrator is **blocked inside a tool call** for
-the entire duration of any work it dispatches. A control plane that cannot
-answer you while work is happening is not a control plane. Everything else here
-follows from removing that.
+When crew was designed, an in-process subagent **blocked the orchestrator
+inside a tool call** for the entire duration of the work. That is no longer
+true — Claude Code runs subagents in the background and wakes the orchestrator
+on completion — so the first row below is now a tie. What crew still buys is
+the other rows: a window you can read, a ledger that survives a dead session,
+and validator isolation that is physical rather than promised.
 
 | | in-process subagent | crewmate |
 |---|---|---|
-| Controller during work | blocked in a tool call | free |
+| Controller during work | free (background subagent) | free |
 | Visibility | a spinner | a window rendering its stream |
 | Intervention | kill the mission | steer it, or attach when it blocks |
 | Session dies | work is lost | worktree + ledger survive; reconcile resumes |

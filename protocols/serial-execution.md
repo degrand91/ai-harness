@@ -46,7 +46,7 @@ Spawn 3–5 Explorer subagents in parallel during the `planning` state to map th
 
 ### Stagger validators for one feature
 After a Worker hands off feature N:
-1. Scrutiny + User-Testing Validators can run **in parallel** against the same feature.
+1. Scrutiny + User-Testing Validators can run **in parallel** against the same feature — spawn them in one message. The `pre-agent-spawn-serial` hook lets validators overlap each other; it refuses a validator while a worker is in flight and a worker while a validator is still reading.
 2. Both must finish before feature N+1 starts.
 
 ### Don't pre-spawn the next Worker

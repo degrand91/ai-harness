@@ -13,6 +13,8 @@ No single model is best at planning, implementation, and validation. The Orchest
 | Explorer | Haiku | Cheap, parallel, read-only | Low |
 | Sub-Orchestrator (rare) | Opus | Same reasoning quality as parent | High |
 
+Effort and turn caps are set in each agent's frontmatter and are the routing's second axis: worker `effort: high`; scrutiny and user-testing `effort: medium`, `maxTurns` 60/80; explorer and scout `effort: low`, `maxTurns` 25/30. Every subagent also sets `omitClaudeMd: true` — the harness manual and the user's global rules are orchestrator context, and loading them into a Haiku grep question cost ~12k tokens per spawn.
+
 ## Scrutiny model selection
 
 The Scrutiny Validator is the only adversarial check on the worker's claims. Its job is to disbelieve and run the assertions. Haiku has been observed fabricating bash command outputs with zero tool calls (see `learnings/anti-patterns/haiku-scrutiny-hallucination.md`). The orchestrator-side guard catches this, but the underlying model unreliability remains.
@@ -74,10 +76,10 @@ Agent({
 
 The strongest version of Creator-Verifier puts the Worker and the Validator on **different providers** so the Validator doesn't inherit Worker training-data biases. This is shipped in v0.3 via the two-agent-file pattern — see [`protocols/multi-provider-validation.md`](multi-provider-validation.md) for the full design.
 
-The mechanism: two agent files (`scrutiny-validator.md` and `scrutiny-validator-external.md`), selected at scrutiny-spawn time by inspecting the `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` env var. External path is opt-in; default path (Haiku, no MCP) is unchanged.
+The mechanism: two agent files (`scrutiny-validator.md` and `scrutiny-validator-external.md`), selected at scrutiny-spawn time by inspecting the `HARNESS_EXTERNAL_VALIDATOR_PROVIDER` env var. External path is opt-in; default path (Sonnet, no MCP) is unchanged.
 
 Approximate isolation via different model tiers remains a complementary defence — not a substitute:
-- Different model tier (Worker = Sonnet, Validator = Haiku).
+- Different effort and prompt (Worker = Sonnet/high with the spec; Validator = Sonnet/medium with the contract and diff only).
 - Fresh context per role (already done).
 - Strict role prompts that prevent the Validator from inheriting Worker reasoning (already done).
 

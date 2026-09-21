@@ -81,4 +81,40 @@ it "spawn survives malformed JSON without blocking the call"
 run_hook "$SPAWN" 'not json' "CLAUDE_PROJECT_DIR=$home"
 assert_rc 0 "$HOOK_RC"
 
+# --- validators: read-only, so they may share the tree with each other -------
+vhome="$(mktmphome)"
+VSTATE="$vhome/.claude/hooks/agent-spawn-state.json"
+validators() { jq -r '.validator_count' "$VSTATE" 2>/dev/null; }
+
+it "allows scrutiny and user-testing validators together on the same feature"
+run_hook "$SPAWN" "$(spawn_pl scrutiny-validator)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_rc 0 "$HOOK_RC"
+run_hook "$SPAWN" "$(spawn_pl user-testing-validator)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_rc 0 "$HOOK_RC"
+assert_eq "2" "$(validators)"
+assert_eq "false" "$(jq -r '.in_flight_non_explorer' "$VSTATE")"
+
+it "refuses a worker while a validator is still reading the tree"
+run_hook "$SPAWN" "$(spawn_pl worker)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_rc 2 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "validator"
+
+it "releasing both validators frees the tree for the next worker"
+run_hook "$RELEASE" "$(release_pl scrutiny-validator)" "CLAUDE_PROJECT_DIR=$vhome"
+run_hook "$RELEASE" "$(release_pl user-testing-validator)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_eq "0" "$(validators)"
+run_hook "$SPAWN" "$(spawn_pl worker)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_rc 0 "$HOOK_RC"
+
+it "treats scout like explorer"
+run_hook "$SPAWN" "$(spawn_pl scout)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_rc 0 "$HOOK_RC"
+assert_eq "1" "$(jq -r '.explorer_count' "$VSTATE")"
+
+it "a state file from before validator_count existed still parses"
+printf '{"in_flight_non_explorer":false,"explorer_count":0,"updated_at":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$VSTATE"
+run_hook "$SPAWN" "$(spawn_pl scrutiny-validator)" "CLAUDE_PROJECT_DIR=$vhome"
+assert_rc 0 "$HOOK_RC"
+assert_eq "1" "$(validators)"
+
 finish

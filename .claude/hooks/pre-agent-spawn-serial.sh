@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
 #
-# PreToolUse hook — enforces serial execution for non-explorer subagent spawns.
+# PreToolUse hook — enforces serial execution for subagent spawns.
 #
-# Rules:
-#   - Non-Agent tool calls: always pass through (exit 0).
-#   - Explorer subagents: always pass through (exit 0); increment explorer_count.
-#   - Non-explorer subagents: allowed only if in_flight_non_explorer is false;
-#     otherwise blocked (exit 2).
+# Three classes of subagent:
+#   - explorer / scout        read-only recon. Always allowed, any number at once.
+#   - validators              read-only, adversarial: scrutiny-validator,
+#                             scrutiny-validator-external, user-testing-validator.
+#                             Allowed together (Scrutiny + User-Testing on the
+#                             same feature is the one parallelism the feature loop
+#                             permits — CLAUDE.md §6), but NOT while a worker is
+#                             in flight: they validate a commit, and a worker
+#                             moves HEAD.
+#   - everything else         a worker (or any writing role). One at a time, and
+#                             not while a validator is still reading the tree it
+#                             would change.
 #
 # State file: .claude/hooks/agent-spawn-state.json
-# Stale-lock: if in_flight_non_explorer=true but updated_at is >600s ago, reset.
+#   { in_flight_non_explorer, explorer_count, validator_count, updated_at }
+# Stale-lock: if a lock is held but updated_at is >600s ago, reset. The release
+# hook normally clears it; staleness only matters after a crash.
 #
 # Input: JSON on stdin from Claude Code hook system.
 #   { "tool_name": "Agent", "tool_input": { "subagent_type": "worker" } }
@@ -37,12 +46,13 @@ STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/agent-spawn-state.json"
 write_state() {
   local in_flight="$1"
   local explorer_count="$2"
+  local validator_count="$3"
   local now
   now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   local tmp
   tmp="$(mktemp "${STATE_FILE}.tmp.XXXXXX")"
-  printf '{"in_flight_non_explorer":%s,"explorer_count":%d,"updated_at":"%s"}\n' \
-    "$in_flight" "$explorer_count" "$now" > "$tmp"
+  printf '{"in_flight_non_explorer":%s,"explorer_count":%d,"validator_count":%d,"updated_at":"%s"}\n' \
+    "$in_flight" "$explorer_count" "$validator_count" "$now" > "$tmp"
   mv "$tmp" "$STATE_FILE"
 }
 
@@ -50,21 +60,23 @@ write_state() {
 # Read or initialise state
 # ---------------------------------------------------------------------------
 if [ ! -f "$STATE_FILE" ]; then
-  write_state false 0
+  write_state false 0 0
 fi
 
 # A corrupt state file is reset rather than inherited: `false`/`0` is the safe
 # reading, since it only ever permits a spawn the operator asked for.
 IN_FLIGHT="$(jq -r '.in_flight_non_explorer // false' "$STATE_FILE" 2>/dev/null || echo false)"
 EXPLORER_COUNT="$(jq -r '.explorer_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
+VALIDATOR_COUNT="$(jq -r '.validator_count // 0' "$STATE_FILE" 2>/dev/null || echo 0)"
 UPDATED_AT="$(jq -r '.updated_at // empty' "$STATE_FILE" 2>/dev/null || true)"
 case "$IN_FLIGHT" in true|false) ;; *) IN_FLIGHT=false ;; esac
 case "$EXPLORER_COUNT" in ''|*[!0-9]*) EXPLORER_COUNT=0 ;; esac
+case "$VALIDATOR_COUNT" in ''|*[!0-9]*) VALIDATOR_COUNT=0 ;; esac
 
 # ---------------------------------------------------------------------------
-# Stale-lock check: reset if in_flight but updated_at > 600s ago
+# Stale-lock check: reset held locks if updated_at > 600s ago
 # ---------------------------------------------------------------------------
-if [ "$IN_FLIGHT" = "true" ] && [ -n "$UPDATED_AT" ]; then
+if { [ "$IN_FLIGHT" = "true" ] || [ "$VALIDATOR_COUNT" -gt 0 ]; } && [ -n "$UPDATED_AT" ]; then
   NOW_EPOCH="$(date -u +%s)"
   # 'date -d' works on Linux; on macOS use 'date -jf' with TZ=UTC to avoid
   # timezone skew (the timestamp is always UTC but macOS parses it as local time
@@ -76,28 +88,39 @@ if [ "$IN_FLIGHT" = "true" ] && [ -n "$UPDATED_AT" ]; then
   fi
   AGE=$(( NOW_EPOCH - UPDATED_EPOCH ))
   if [ "$AGE" -gt 600 ]; then
-    write_state false "$EXPLORER_COUNT"
+    write_state false "$EXPLORER_COUNT" 0
     IN_FLIGHT=false
+    VALIDATOR_COUNT=0
   fi
 fi
 
-# ---------------------------------------------------------------------------
-# Explorer: always allow; just increment counter
-# ---------------------------------------------------------------------------
-if [ "$SUBAGENT_TYPE" = "explorer" ]; then
-  NEW_COUNT=$(( EXPLORER_COUNT + 1 ))
-  write_state "$IN_FLIGHT" "$NEW_COUNT"
-  exit 0
-fi
+case "$SUBAGENT_TYPE" in
+  explorer|scout)
+    # Read-only recon: always allow; just count.
+    write_state "$IN_FLIGHT" $(( EXPLORER_COUNT + 1 )) "$VALIDATOR_COUNT"
+    exit 0
+    ;;
+  scrutiny-validator|scrutiny-validator-external|user-testing-validator)
+    if [ "$IN_FLIGHT" = "true" ]; then
+      printf '[pre-agent-spawn-serial] Refusing to spawn %s while a worker is in flight: validators read a commit, and a worker moves HEAD. Wait for the handoff.\n' "$SUBAGENT_TYPE" >&2
+      exit 2
+    fi
+    write_state "$IN_FLIGHT" "$EXPLORER_COUNT" $(( VALIDATOR_COUNT + 1 ))
+    exit 0
+    ;;
+esac
 
 # ---------------------------------------------------------------------------
-# Non-explorer: enforce serial rule
+# Worker (or any other writing role): enforce the serial rule
 # ---------------------------------------------------------------------------
 if [ "$IN_FLIGHT" = "true" ]; then
-  printf '[pre-agent-spawn-serial] Refusing concurrent non-explorer subagent spawn. Already in-flight non-explorer subagent. Only '\''explorer'\'' subagents may run concurrently. See protocols/parallel-exploration.md.\n' >&2
+  printf '[pre-agent-spawn-serial] Refusing concurrent non-explorer subagent spawn. Already in-flight non-explorer subagent. Only explorers and validators may run concurrently. See protocols/serial-execution.md.\n' >&2
+  exit 2
+fi
+if [ "$VALIDATOR_COUNT" -gt 0 ]; then
+  printf '[pre-agent-spawn-serial] Refusing to spawn %s: %d validator(s) still reading the tree it would change. Wait for their verdicts.\n' "${SUBAGENT_TYPE:-subagent}" "$VALIDATOR_COUNT" >&2
   exit 2
 fi
 
-# Non-explorer, none in-flight: allow and lock
-write_state true "$EXPLORER_COUNT"
+write_state true "$EXPLORER_COUNT" "$VALIDATOR_COUNT"
 exit 0

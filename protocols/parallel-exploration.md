@@ -1,10 +1,10 @@
 # Protocol: Parallel Exploration
 
-Explorer subagents are the **only** subagent type the Orchestrator may spawn concurrently during a mission. Every other subagent type is subject to the serial constraint defined in [protocols/serial-execution.md](serial-execution.md).
+Explorer (and Scout) subagents may be spawned concurrently with anything, in any number, during a mission. The only other overlap the harness permits is the Scrutiny + User-Testing pair on one feature; Workers are strictly serial — see [protocols/serial-execution.md](serial-execution.md).
 
 ## The rule
 
-Only `explorer` subagents may be spawned (or run) concurrently with other Agent calls. Workers, Scrutiny Validators, and User-Testing Validators must run one at a time, in order.
+`explorer` and `scout` subagents may be spawned (or run) concurrently with any other Agent call. Scrutiny and User-Testing Validators may run together on the same feature (both read-only) but never alongside a Worker. Workers run one at a time, in order. The `pre-agent-spawn-serial` hook enforces all three.
 
 Explorers are read-only by design. They carry no `Write`, `Edit`, or `Bash` permissions. A batch of Explorers cannot corrupt the codebase, fork the architecture, or produce conflicting git state. That is why concurrent dispatch is safe for them and banned for everything else.
 
@@ -37,7 +37,7 @@ Avoid broad questions like "explain the whole codebase." Broad prompts produce o
 
 ## Background mode
 
-Dispatch Explorers with `run_in_background: true`. This keeps their intermediate output out of the Orchestrator's active context until synthesis time. The Orchestrator then reads each Explorer's result once, extracts the signal, and discards the raw output.
+Explorers run in the background by default (there is no flag to set). Their intermediate output never enters the Orchestrator's context; only the four-section report does, when the completion notification arrives. The Orchestrator then reads each Explorer's result once, extracts the signal, and discards the raw output.
 
 If background mode is unavailable in the current client, dispatch the Explorers and do not read their results until all have finished.
 

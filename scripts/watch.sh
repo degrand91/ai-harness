@@ -131,6 +131,13 @@ loop_has_next() {
     case "$pend" in ''|*[!0-9]*) pend=0 ;; esac
     [ "$pend" -gt 0 ] || continue
     live=0
+    # execution=subagent: in-process Agent calls leave no crew ledger. A
+    # feature in in_progress/in_validation is the in-flight work.
+    if [ "$(jq -r '.execution // ""' "$md/status.json" 2>/dev/null)" = "subagent" ]; then
+      act="$(jq -r '[.features[]? | select(.state == "in_progress" or .state == "in_validation")] | length' "$md/status.json" 2>/dev/null || echo 0)"
+      case "$act" in ''|*[!0-9]*) act=0 ;; esac
+      [ "$act" -gt 0 ] && live=1
+    fi
     while IFS= read -r t; do
       [ -n "$t" ] || continue
       [ "$(crew_meta_get "$HARNESS_ROOT" "$t" mission 2>/dev/null)" = "$mid" ] || continue

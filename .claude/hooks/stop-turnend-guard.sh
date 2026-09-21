@@ -169,6 +169,28 @@ if [ "${#PROBLEMS[@]}" -eq 0 ] && [ -d "$HARNESS_ROOT/state" ]; then
       [ "$pending" -gt 0 ] || continue
 
       live=0
+      # execution=subagent: the worker/validator is an in-process Agent call,
+      # invisible to the crew ledger. A feature parked in in_progress or
+      # in_validation IS the in-flight work; only the staleness check above
+      # can tell a live subagent from an abandoned one.
+      if [ "$(jq -r '.execution // ""' "$mission_dir/status.json" 2>/dev/null)" = "subagent" ]; then
+        active="$(jq -r '[.features[]? | select(.state == "in_progress" or .state == "in_validation")] | length' "$mission_dir/status.json" 2>/dev/null || echo 0)"
+        case "$active" in ''|*[!0-9]*) active=0 ;; esac
+        [ "$active" -gt 0 ] && live=1
+      fi
+      # The serial-spawn lock is the other witness to an in-process subagent.
+      # Subagents run in the background and the orchestrator is SUPPOSED to end
+      # its turn while they work; a held, recent lock means exactly that, and
+      # refusing the stop would push it back into polling.
+      spawn_state="$HARNESS_ROOT/.claude/hooks/agent-spawn-state.json"
+      if [ "$live" -eq 0 ] && [ -f "$spawn_state" ]; then
+        held="$(jq -r 'if (.in_flight_non_explorer // false) == true or ((.validator_count // 0) > 0) then "yes" else "no" end' "$spawn_state" 2>/dev/null || echo no)"
+        if [ "$held" = "yes" ]; then
+          lock_m="$(stat -f %m "$spawn_state" 2>/dev/null || stat -c %Y "$spawn_state" 2>/dev/null || echo 0)"
+          case "$lock_m" in ''|*[!0-9]*) lock_m=0 ;; esac
+          [ "$lock_m" -gt 0 ] && [ $(( NOW - lock_m )) -lt "$STUCK_SECONDS" ] && live=1
+        fi
+      fi
       while IFS= read -r _t; do
         [ -n "$_t" ] || continue
         [ "$(crew_meta_get "$HARNESS_ROOT" "$_t" mission 2>/dev/null)" = "$id" ] || continue

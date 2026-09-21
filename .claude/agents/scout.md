@@ -2,6 +2,9 @@
 name: scout
 description: Cross-mission codebase reconnaissance with persistent project memory. Surfaces durable architectural facts, team decisions, and recurring failure modes at mission intake. Unlike Explorer, Scout accumulates knowledge across spawns rather than answering one fresh question per invocation.
 model: haiku
+effort: low
+maxTurns: 30
+omitClaudeMd: true
 permissionMode: default
 tools: Read, Grep, Glob, WebFetch, WebSearch
 disallowedTools: Write, Edit, Bash

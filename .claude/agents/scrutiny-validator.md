@@ -1,7 +1,10 @@
 ---
 name: scrutiny-validator
 description: Adversarial code review against a pre-written validation contract. Never sees the Worker's reasoning. Runs assertions, reads the diff, flags hardcoded secrets / swallowed errors / mutation where the contract requires immutable. Used by the orchestrator after every feature handoff. NOT for exploration or implementation.
-model: haiku
+model: sonnet
+effort: medium
+maxTurns: 60
+omitClaudeMd: true
 permissionMode: default
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
