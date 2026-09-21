@@ -37,7 +37,6 @@ For each question in the current batch, spawn an Agent call:
 ```
 subagent_type: "explorer"
 model:         "haiku"
-run_in_background: true
 prompt: |
   Answer the following question about this codebase. Return ONLY the four-section format:
   ## Question / ## Answer / ## Evidence / ## Caveats
@@ -45,7 +44,7 @@ prompt: |
   Question: <question text>
 ```
 
-Use `run_in_background: true` so Explorer output stays out of the Orchestrator's active context until all agents in the batch have finished. This prevents partial synthesis and keeps the Orchestrator's context window clean. See [protocols/parallel-exploration.md](../../protocols/parallel-exploration.md) for the rationale.
+Explorers run in the background automatically; their streamed output never enters the Orchestrator's context — only each four-section report does, on completion. End the turn after dispatching and synthesise once every report is in. See [protocols/parallel-exploration.md](../../protocols/parallel-exploration.md).
 
 Dispatch all Explorers in the batch inside a **single message** (multiple Agent tool calls at once) so they actually run concurrently.
 
@@ -93,7 +92,7 @@ Surface the brief directly as output. Do not write it to a file unless the Orche
 
 ## Background-mode rationale
 
-Per [protocols/parallel-exploration.md](../../protocols/parallel-exploration.md), Explorer subagents must be dispatched with `run_in_background: true`. This ensures:
+Per [protocols/parallel-exploration.md](../../protocols/parallel-exploration.md), Explorer subagents run in the background (the default; there is no flag). This ensures:
 
 1. Their intermediate streamed output does not fill the Orchestrator's context window with low-signal lines.
 2. Synthesis happens only after all results are in — no premature merging.

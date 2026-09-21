@@ -1,6 +1,6 @@
 ---
 name: explorer
-description: Read-only reconnaissance for a single, narrow question about a codebase or external resource. Answers in structured form (Question / Answer / Evidence / Caveats). Use during the planning phase to map a target repo. May be spawned in parallel — explorers are the only subagents allowed to fan out concurrently. NOT for implementation or validation.
+description: Read-only reconnaissance for a single, narrow question about a codebase or external resource. Answers in structured form (Question / Answer / Evidence / Caveats). Use during the planning phase to map a target repo. May be spawned in parallel, in any number, alongside anything else. NOT for implementation or validation.
 model: haiku
 effort: low
 maxTurns: 25

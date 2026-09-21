@@ -36,7 +36,7 @@ Three things distinguish the harness from a long chat session:
 Rough order-of-magnitude per feature:
 
 - **Worker (Sonnet):** 20 000–80 000 input tokens depending on codebase size and feature complexity.
-- **Scrutiny Validator (Haiku):** 5 000–15 000 tokens (reads the diff and runs assertions).
+- **Scrutiny Validator (Sonnet, effort medium):** 10 000–20 000 tokens (reads the diff and runs assertions; measured 14 500 on the 2026-09-21 smoke mission).
 - **User-Testing Validator (Sonnet):** 10 000–30 000 tokens (tool use heavy).
 - **Orchestrator overhead (Opus):** 5 000–10 000 tokens per feature (planning, handoff recording, status updates).
 

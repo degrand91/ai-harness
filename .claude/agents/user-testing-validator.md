@@ -7,7 +7,8 @@ maxTurns: 80
 omitClaudeMd: true
 permissionMode: default
 tools: Read, Bash, Grep, Glob
-mcpTools: playwright (browser_navigate, browser_click, browser_fill, browser_type, browser_screenshot, browser_snapshot)
+mcpServers:
+  - playwright
 disallowedTools: Write, Edit
 color: purple
 ---
