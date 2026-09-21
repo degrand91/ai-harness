@@ -61,9 +61,39 @@ assert_rc 0 "$HOOK_RC"
 
 it "blocks a stop on a feature in progress with no activity for over an hour"
 age_mission "$d" 7300
+rm -f "$home/state/stuck-stop-count"
 run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home"
 assert_rc 2 "$HOOK_RC"
 assert_contains "$HOOK_ERR" "F001"
+
+it "a stuck-only refusal is bounded: fails open after the limit, and says so"
+# The stuck feature is frequently another session's (execution=subagent puts
+# the worker in that session's process, invisible here), and an unrelated
+# session must not close or pause a mission it does not drive. Refusing forever
+# wedges every other session on the host.
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home" "HARNESS_NOTIFY_DRYRUN=1" "HARNESS_BLIND_STOP_LIMIT=2"
+assert_rc 2 "$HOOK_RC"
+run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home" "HARNESS_NOTIFY_DRYRUN=1" "HARNESS_BLIND_STOP_LIMIT=2"
+assert_rc 0 "$HOOK_RC"
+assert_contains "$HOOK_ERR" "failed open"
+assert_contains "$HOOK_ERR" "stuck-feature"
+
+it "giving up on a stuck feature resets its counter"
+assert_file_missing "$home/state/stuck-stop-count"
+
+it "a red feature without follow-up is never bounded, even alongside a stuck one"
+python3 -c "
+import json; p='$d/status.json'
+x=json.load(open(p))
+x['features'].append({'id':'F002','state':'closed','color':'red','followups':[]})
+json.dump(x,open(p,'w'))"
+age_mission "$d" 7300
+for _ in 1 2 3 4; do
+  run_hook "$HOOK" "$PAYLOAD" "CLAUDE_PROJECT_DIR=$home" "HARNESS_NOTIFY_DRYRUN=1" "HARNESS_BLIND_STOP_LIMIT=2"
+  assert_rc 2 "$HOOK_RC"
+done
+assert_contains "$HOOK_ERR" "red features without follow-ups: F002"
+assert_file_missing "$home/state/stuck-stop-count"
 rm -rf "$home/missions/m-fresh"
 
 # --- unknown state ----------------------------------------------------------

@@ -40,6 +40,15 @@
 # notification. A guard that can refuse forever is a wedged session, and a
 # wedged session is worse than a loop that ran one feature too many.
 #
+# The stuck-feature block is bounded the same way. A stuck feature is often
+# another session's: with execution=subagent the worker lives in that session's
+# process and this guard cannot see it, and an unrelated session must not
+# close or pause a mission it does not drive (two orchestrators on one
+# status.json corrupts it). Observed 2026-09-21: an aside session was refused
+# every stop, forever, over a mission it had never touched. Red features and
+# unclassifiable state stay hard blocks — those are cheap to repair from
+# anywhere and never legitimately "someone else's".
+#
 # Tuning: HARNESS_STUCK_SECONDS (3600) · HARNESS_BLIND_STOP_LIMIT (3)
 #         HARNESS_LOOP_ACTIVE_SECONDS (86400).
 
@@ -68,6 +77,7 @@ fi
 [ -d "$MISSIONS" ] || exit 0
 
 PROBLEMS=()
+STUCK_N=0   # how many of PROBLEMS are stuck-feature reports (the bounded kind)
 NOW="$(date -u +%s)"
 
 shopt -s nullglob
@@ -133,6 +143,7 @@ for mission_dir in "$MISSIONS"/*/; do
       fi
       if [ "$age" -gt "$STUCK_SECONDS" ]; then
         PROBLEMS+=("Mission ${id}: feature(s) ${stuck} in progress with no outcome and no activity for $(( age / 60 )) minutes")
+        STUCK_N=$(( STUCK_N + 1 ))
       fi
     fi
   fi
@@ -232,7 +243,30 @@ if [ -n "$BLIND" ]; then
 fi
 rm -f "$BLIND_COUNTER" 2>/dev/null || true
 
-[ "${#PROBLEMS[@]}" -eq 0 ] && exit 0
+if [ "${#PROBLEMS[@]}" -eq 0 ]; then
+  rm -f "$HARNESS_ROOT/state/stuck-stop-count" 2>/dev/null || true
+  exit 0
+fi
+
+# Stuck-only refusals are bounded (see LOOP SAFETY in the header). Anything
+# harder in the list — a red without follow-up, an unclassifiable state — keeps
+# the refusal unconditional, and the stuck counter is left untouched so a later
+# stuck-only turn still gets its full allowance.
+STUCK_COUNTER="$HARNESS_ROOT/state/stuck-stop-count"
+if [ "$STUCK_N" -eq "${#PROBLEMS[@]}" ]; then
+  LIMIT="${HARNESS_BLIND_STOP_LIMIT:-3}"
+  N=0; [ -f "$STUCK_COUNTER" ] && N="$(cat "$STUCK_COUNTER" 2>/dev/null || echo 0)"
+  case "$N" in ''|*[!0-9]*) N=0 ;; esac
+  if [ "$N" -ge "$LIMIT" ]; then
+    # Fail open, loudly. This path exits 0, so stderr never reaches the model;
+    # the notification is the only trace that the guard gave up.
+    "$CODE_ROOT/scripts/notify.sh" "Harness" "Turn-end guard failed open after $LIMIT stuck-feature refusals: ${PROBLEMS[*]}" || true
+    rm -f "$STUCK_COUNTER" 2>/dev/null || true
+    exit 0
+  fi
+  mkdir -p "$HARNESS_ROOT/state" 2>/dev/null || true
+  printf '%s' "$((N + 1))" > "$STUCK_COUNTER" 2>/dev/null || true
+fi
 
 {
   echo "[Stop hook] Refusing to end — unresolved mission issues:"
