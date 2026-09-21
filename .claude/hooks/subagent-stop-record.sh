@@ -63,7 +63,7 @@ STATUS_FILE="$MISSION_DIR/status.json"
 [ ! -f "$LOG" ] && exit 0
 
 # ── Persist the final message to the current feature's folder ────────────────
-# The folder is found by id: each features/NNN-*/status.json carries `id`
+# The folder is found by id: each features/NNN-*/status.json carries `feature_id`
 # (F001, F001-followup-2, …); the name pattern is the fallback for folders
 # scaffolded without one.
 feature_dir_for() {
@@ -71,7 +71,7 @@ feature_dir_for() {
   for d in "$MISSION_DIR"/features/*/; do
     [ -d "$d" ] || continue
     id=""
-    [ -f "$d/status.json" ] && id="$(jq -r '.id // empty' "$d/status.json" 2>/dev/null || true)"
+    [ -f "$d/status.json" ] && id="$(jq -r '.feature_id // .id // empty' "$d/status.json" 2>/dev/null || true)"
     if [ -z "$id" ]; then
       d="${d%/}"; num="${d##*/}"; rest="$num"
       num="${num%%-*}"
@@ -88,6 +88,25 @@ feature_dir_for() {
 PERSIST_NOTE=""
 if [ -n "$ARTIFACT" ] && [ -f "$STATUS_FILE" ]; then
   MESSAGE="$(printf '%s' "$INPUT" | jq -r '.last_assistant_message // empty' 2>/dev/null || true)"
+  # Agents that report through SubagentHandback leave "Report delivered to
+  # caller." as their last message; the report itself is the tool call's
+  # input.message in the transcript. Found by the 2026-09-21 smoke mission.
+  case "$MESSAGE" in
+    *'## Feature:'*) ;;
+    *)
+      TP="$(printf '%s' "$INPUT" | jq -r '.agent_transcript_path // empty' 2>/dev/null || true)"
+      if [ -n "$TP" ] && [ -r "$TP" ]; then
+        HB="$(jq -r '
+          select(.type == "assistant")
+          | .message.content[]?
+          | select(.type == "tool_use" and .name == "SubagentHandback")
+          | .input.message // empty' "$TP" 2>/dev/null || true)"
+        # jq emits one document per handback; the last one is the final report.
+        HB="$(printf '%s' "$HB" | awk '/^## Feature:/{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}')"
+        [ -n "$HB" ] && MESSAGE="$HB"
+      fi
+      ;;
+  esac
   CURRENT="$(jq -r '.current_feature // empty' "$STATUS_FILE" 2>/dev/null || true)"
   if [ -n "$MESSAGE" ] && [ -n "$CURRENT" ]; then
     # Defensive parse: keep from the first `## Feature:` heading onward.

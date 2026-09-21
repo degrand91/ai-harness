@@ -77,7 +77,7 @@ phome="$(mktmphome)"
 pd="$(mkmission "$phome" 2026-04-03-m '{"state":"executing","current_feature":"F002-followup-1","features":[],"tokens":'"$TOKENS"'}')"
 mkdir -p "$pd/features/002-replay-import-ui" "$pd/features/002-followup-1-lazy-chunk"
 printf '{"id":"F002"}\n' > "$pd/features/002-replay-import-ui/status.json"
-printf '{"id":"F002-followup-1"}\n' > "$pd/features/002-followup-1-lazy-chunk/status.json"
+printf '{"feature_id":"F002-followup-1"}\n' > "$pd/features/002-followup-1-lazy-chunk/status.json"
 msg_pl() { jq -cn --arg t "$1" --arg m "$2" '{hook_event_name:"SubagentStop",agent_type:$t,last_assistant_message:$m}'; }
 
 it "writes a scrutiny verdict to the current feature's scrutiny.md, preamble stripped"
@@ -150,5 +150,25 @@ it "ignores an unreadable transcript path"
 run_hook "$HOOK" '{"agent_type":"worker","agent_transcript_path":"/nonexistent/x.jsonl"}' "CLAUDE_PROJECT_DIR=$thome"
 assert_rc 0 "$HOOK_RC"
 assert_eq "29157" "$(jq -r .tokens.workers.input "$td/status.json")"
+
+# --- SubagentHandback: the report is a tool call, not the last message -------
+hhome="$(mktmphome)"
+hd="$(mkmission "$hhome" 2026-04-05-m '{"state":"executing","current_feature":"F001","features":[],"tokens":'"$TOKENS"'}')"
+mkdir -p "$hd/features/001-greet"
+printf '{"feature_id":"F001"}\n' > "$hd/features/001-greet/status.json"
+htr="$hhome/agent-h.jsonl"
+{
+  printf '{"type":"assistant","message":{"id":"a1","content":[{"type":"text","text":"working"}],"usage":{"input_tokens":1,"output_tokens":1}}}\n'
+  # %s keeps the JSON escapes literal; a bare printf would turn \n into real newlines and break the line.
+  printf '%s\n' '{"type":"assistant","message":{"id":"a2","content":[{"type":"tool_use","name":"SubagentHandback","input":{"message":"## Feature: greet\n\n### What was implemented\n- greet.sh"}}],"usage":{"input_tokens":1,"output_tokens":1}}}'
+  printf '{"type":"assistant","message":{"id":"a3","content":[{"type":"text","text":"Report delivered to caller."}],"usage":{"input_tokens":1,"output_tokens":1}}}\n'
+} > "$htr"
+
+it "persists the SubagentHandback report when last_assistant_message is only the delivery note"
+run_hook "$HOOK" "$(jq -cn --arg t "$htr" '{agent_type:"worker",agent_transcript_path:$t,last_assistant_message:"Report delivered to caller."}')" "CLAUDE_PROJECT_DIR=$hhome"
+assert_rc 0 "$HOOK_RC"
+assert_file_exists "$hd/features/001-greet/handoff.md"
+assert_eq "## Feature: greet" "$(head -n1 "$hd/features/001-greet/handoff.md")"
+assert_contains "$(cat "$hd/features/001-greet/handoff.md")" "- greet.sh"
 
 finish
