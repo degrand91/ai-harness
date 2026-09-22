@@ -8,6 +8,7 @@
 
 
 
+
 - [capabilities-cover-what-the-ui-opens](patterns/capabilities-cover-what-the-ui-opens.md) — In Tauri (and any capability/ACL-scoped host), unit tests that mock the host cannot see permission gaps — for every feature that opens a URL, reads a path, or invokes a plugin, the scrutiny step must diff the capability allow-list against the literal URLs/paths in the code, and a check script should enforce it structurally. (from `2026-09-20-overlay-auto-update`)
 - [contract-defect-amend-not-patch](patterns/contract-defect-amend-not-patch.md) — When the integration check (or a validator) surfaces a defect in the contract itself — not in the code — amend the contract through its amendments log and re-run. Do not paper over with a "the intent was clear" pass. (from `2026-05-23-ship-v0-3-multi-provider`)
 - [host-adapter-for-native-app-validation](patterns/host-adapter-for-native-app-validation.md) — For a native/desktop app (Tauri, Electron, Overwolf) put every platform call behind a small host interface with a browser implementation and an env-gated selftest hook, so validators on a machine that cannot run the target OS still exercise real behaviour in a real browser and read native window/shortcut state from inside the runtime. (from `2026-09-17-wc3-build-order-overlay`)
@@ -21,6 +22,8 @@
 - [verify-from-detached-scratch-worktree](patterns/verify-from-detached-scratch-worktree.md) — When a human shares the mission worktree and may leave uncommitted (even non-compiling) edits there, workers and validators must never stash/checkout/reset/restore/clean it — they stage only their own paths and run typecheck/lint/test/build from a detached scratch worktree at the commit under test, then remove it. (from `2026-09-18-overlay-private-builds`)
 
 ## Anti-patterns
+
+
 
 
 - [haiku-scrutiny-hallucination](anti-patterns/haiku-scrutiny-hallucination.md) — Haiku scrutiny validator fabricates bash assertion results without running any tools, reporting false failures. (from `2026-05-24-browser-qa-capability`; recurred in `2026-05-24-browser-qa-capability`)

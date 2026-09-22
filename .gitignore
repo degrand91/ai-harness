@@ -30,3 +30,6 @@ config/
 # Python
 __pycache__/
 *.pyc
+
+# Playwright MCP scratch output (validator screenshots)
+.playwright-mcp/
