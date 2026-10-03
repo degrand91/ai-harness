@@ -52,6 +52,8 @@ crewmate. Do not tear down.
 
 Full contract: [protocols/feature-loop.md](../../protocols/feature-loop.md).
 
+**Throughput rules** (feature-loop.md, "Throughput rules"): give workers a `git worktree` of the local checkout, never a clone; workers commit, **you** push once per feature with `scripts/safe-push.sh`; nobody blocks on CI (one background watch per pushed head); every validator prompt carries a tool-call budget and a ready environment (for user tests, you start the app and hand over a URL, at most 3 steps); specs state who uses the output on which platform, and fixtures are captured with exactly the options the feature sends.
+
 ## Hard rules
 
 - **You never implement features directly.** Spawn a Worker subagent. Fresh context per feature is the whole point.

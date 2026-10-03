@@ -17,7 +17,13 @@
 # Harness runtime state (filesystem-only by design)
 .claude/agent-memory/
 .claude/hooks/agent-spawn-state.json
+# temp files the spawn-lock hook leaves behind when an atomic write is interrupted
+.claude/hooks/agent-spawn-state.json.tmp.*
 missions/
+# project-specific learnings: kept personal, never published
+learnings/local/
+# validator evidence written to the harness root instead of a mission folder
+/features/
 
 # Local operational state (see docs/plans — "Layout and state")
 #   data/   project registry, inbox, crew worktrees

@@ -2,6 +2,16 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] – 2026-10-02
+
+### Changed (throughput, measured)
+
+- **Measured first.** One mission took 7.5 h from approval to the first build. More than half was waste: one worker `git push` stalled 146 min on a flaky HTTPS link, the other pushes took 3 to 7 min each, two validators hit their turn limit after 54 min and returned nothing, and two follow-ups came from specs missing real constraints.
+- **`scripts/safe-push.sh`** (+ `tests/safe-push.test.sh`): a push that cannot hang. git's low-speed abort (1 KB/s for 20 s), a hard wall clock per attempt (perl alarm, default 120 s), no credential prompts, 3 attempts.
+- **Worker role** (`worker.md`): works in the worktree it is given, never clones, commits locally and does not push, does not wait for CI, runs the full gate once at the end.
+- **Validator roles** (`scrutiny-validator*.md`, `user-testing-validator.md`): a stated tool-call budget, and a verdict is always delivered (write it at about 80% of the budget, mark the rest `blocked: budget` / `not reached: budget`). User testers use the environment the orchestrator starts instead of cloning, installing and serving themselves.
+- **Feature loop** (`protocols/feature-loop.md`, "Throughput rules"; pointer in `orchestrator.md`): worktrees not clones, the orchestrator pushes once per feature, one background CI watch, budgets in every validator prompt, parallelism only through `crew` (registration stays the captain's call), and specs that state platform constraints and capture fixtures with the exact options the feature sends.
+
 ## [Unreleased] — 2026-09-21
 
 ### Changed (throughput review — "slow but accurate")

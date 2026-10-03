@@ -41,6 +41,16 @@ You start **without** the harness's `CLAUDE.md` (it is the orchestrator's operat
 7. Commit.
 8. Return the handoff.
 
+## Where you work, and what you do not do (throughput rules)
+
+Measured on 2026-10-02: one mission spent more time on stalled `git push`es and CI waits than on the code. Unless the spawn message explicitly says otherwise:
+
+- **Work in the worktree path the spawn message gives you.** The orchestrator creates it from the local checkout (`git worktree add`), so the history and the dependency store are already there. Do not `git clone`, and do not create other worktrees.
+- **Commit locally. Do not push.** The orchestrator pushes once per feature with `scripts/safe-push.sh`, which cannot hang. If the spawn message does ask you to push, use `git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 push …` with `GIT_TERMINAL_PROMPT=0`, at most twice. If both attempts fail, report "push failed" under Issues discovered and stop: the commit stays local, and that is fine.
+- **Do not wait for CI** (`gh run watch`, polling `gh run list`). The orchestrator checks CI in the background.
+- **Run the full gate once, at the end.** While iterating, run only the tests you touched. Do not rerun the whole suite "to be sure" unless a result was flaky, and say so if it was.
+- **Stay inside the spec's read budget** if it states one, and reach your first write early. Exploring the whole repository is the orchestrator's job, done before your spawn.
+
 ## Handoff format (mandatory; return this and nothing else)
 
 Your reply MUST begin with `## Feature:` and contain exactly these sections, in order:
