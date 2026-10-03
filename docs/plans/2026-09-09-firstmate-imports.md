@@ -362,7 +362,7 @@ One file per open decision, `missions/<id>/decisions/DH-001.json`:
 ```json
 {
   "id": "DH-001",
-  "mission_id": "2026-06-29-store-review-remediation",
+  "mission_id": "2026-01-15-store-review-remediation",
   "project": "mobile-app",
   "opened_at": "2026-09-09T10:00:00Z",
   "blocking": true,

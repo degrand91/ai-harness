@@ -6,7 +6,7 @@
 
 It's tempting to write `<lint/test/build command> → expect exit 0` as a contract assertion. But if the target repo *already fails* that command on its default branch (pre-existing lint errors, skipped tests, flaky build), the assertion is unsatisfiable through no fault of the mission's work — and a worker/validator will either get falsely blocked or be tempted to "fix" unrelated code.
 
-In `2026-06-10-add-about-us-section`, C-003 said `eslint . → exit 0`, but `main` already had a `react-hooks/immutability` error in an untouched file. The assertion had to be amended mid-mission to scope lint to **mission-changed files only** (`eslint $(git diff --name-only main...HEAD -- '*.ts' '*.tsx')`).
+In a mission on a private web project, C-003 said `eslint . → exit 0`, but `main` already had a `react-hooks/immutability` error in an untouched file. The assertion had to be amended mid-mission to scope lint to **mission-changed files only** (`eslint $(git diff --name-only main...HEAD -- '*.ts' '*.tsx')`).
 
 ## Pattern
 

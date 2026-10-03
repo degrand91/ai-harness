@@ -6,7 +6,7 @@ One file per open decision: `missions/<id>/decisions/DH-NNN.json`. Answering
 ```json
 {
   "id": "DH-001",
-  "mission_id": "2026-06-29-store-review-remediation",
+  "mission_id": "2026-01-15-store-review-remediation",
   "opened_at": "2026-09-09T10:00:00Z",
   "blocking": true,
   "question": "Reword the listing, or change the store category?",

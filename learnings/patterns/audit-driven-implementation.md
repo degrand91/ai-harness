@@ -1,6 +1,6 @@
 # Pattern: Audit-Driven Implementation
 
-**Source:** `2026-05-26-littlestorywand-ux-fixes` (preceded by `2026-05-26-littlestorywand-ux-audit`)
+**Source:** a mission on a private project (preceded by a research/audit mission on the same project)
 **Confidence:** high (5/5 first-pass, zero follow-ups)
 
 ## Context
@@ -11,7 +11,7 @@ When implementing fixes from a prior research/audit mission, the audit report se
 
 1. **Audit report recommendations map directly to features.** Group by theme (accessibility, design system, UX) rather than by individual recommendation number. A single feature handles 3-4 related recommendations that touch overlapping files.
 
-2. **File paths and line numbers from the audit are gold — but verify at intake.** The audit cited `home.tsx` for the AgePromptModal, but it was actually in `create.tsx`. Run 1-2 explorers at intake to spot-check key file references.
+2. **File paths and line numbers from the audit are gold — but verify at intake.** The audit cited one screen file for a modal component, but the modal actually lived in a different screen file. Run 1-2 explorers at intake to spot-check key file references.
 
 3. **Baseline lint/typecheck at intake.** If `bun run lint` already exits 1, asserting "lint passes" is unenforceable. Assert "no new lint errors in modified files" instead, or explicitly exclude pre-existing errors.
 
@@ -23,4 +23,4 @@ When implementing fixes from a prior research/audit mission, the audit report se
 
 ## Anti-pattern
 
-Don't treat an audit report as a specification. It identifies problems and suggests solutions, but the solutions need engineering judgment. The "replace QUIZ with ⭐ Challenge" recommendation was good; a naive "just raise fontSize" would miss the child-anxiety context.
+Don't treat an audit report as a specification. It identifies problems and suggests solutions, but the solutions need engineering judgment. A recommendation to rename an intimidating label was good because it addressed the audience's anxiety; a naive "just raise fontSize" would miss that context.

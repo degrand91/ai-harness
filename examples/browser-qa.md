@@ -10,8 +10,10 @@ This is **descriptive**, not prescriptive. The real protocol lives in [CLAUDE.md
 
 ## Scenario
 
-**User:** "Open Google, search for stefano.puffapps.com, navigate to the site from the results,
+**User:** "Open Google, search for example.com, navigate to the site from the results,
 then fill and submit the contact form. Capture screenshots at every decisive step as evidence."
+
+`example.com` stands in for the site under test; substitute your own domain.
 
 ---
 
@@ -44,8 +46,8 @@ Before any feature work begins:
 ## Assertions
 
 C-001  exit 0      browser_navigate → https://www.google.com (page loads without error)
-C-002  behavioral  Search results page shows a link containing "stefano.puffapps.com"
-C-003  behavioral  Navigating to stefano.puffapps.com loads the site; contact section
+C-002  behavioral  Search results page shows a link containing "example.com"
+C-003  behavioral  Navigating to example.com loads the site; contact section
                    is reachable at the #contact anchor
 C-004  behavioral  Contact form on the page has fields: name, email, subject, message
                    and a submit button labelled "send message"
@@ -84,7 +86,7 @@ browser_screenshot → evidence/01-google-home.png
 Locate the Google search input. On google.com the primary search box carries `name="q"`:
 
 ```
-browser_fill('[name="q"]', "stefano.puffapps.com")
+browser_fill('[name="q"]', "example.com")
 browser_press_key("Enter")
 ```
 
@@ -97,7 +99,7 @@ browser_snapshot
 ```
 
 The snapshot output should contain an element whose accessible text or URL includes
-`stefano.puffapps.com`. This satisfies **C-002**. Then capture evidence:
+`example.com`. This satisfies **C-002**. Then capture evidence:
 
 ```
 browser_screenshot → evidence/02-search-results.png
@@ -108,28 +110,28 @@ browser_screenshot → evidence/02-search-results.png
 Click the result link. Google result links often wrap the domain; use a text or URL selector:
 
 ```
-browser_click('a[href*="puffapps.com"]')
+browser_click('a[href*="example.com"]')
 ```
 
 If the click opens a new tab, use `browser_navigate` directly as a fallback:
 
 ```
-browser_navigate("https://stefano.puffapps.com")
+browser_navigate("https://example.com")
 ```
 
 Capture the landing page:
 
 ```
-browser_screenshot → evidence/03-puffapps-landing.png
+browser_screenshot → evidence/03-site-landing.png
 ```
 
 **5. Navigate to the contact section**
 
-The site is a single-page Next.js app. The contact form lives at the `#contact` anchor on the
+In this scenario the site is a single-page Next.js app. The contact form lives at the `#contact` anchor on the
 main page — there is no separate contact URL. Scroll to it via navigation:
 
 ```
-browser_navigate("https://stefano.puffapps.com/#contact")
+browser_navigate("https://example.com/#contact")
 ```
 
 Take a snapshot to confirm the form fields are present (satisfies **C-003** and **C-004**):
@@ -197,7 +199,7 @@ The Validator stores all screenshots under the feature's evidence folder:
 missions/2026-05-24-browser-qa-demo/features/001-browser-qa-contact-form/evidence/
   01-google-home.png
   02-search-results.png
-  03-puffapps-landing.png
+  03-site-landing.png
   04-contact-form-empty.png
   05-contact-form-filled.png
   06-form-submitted.png

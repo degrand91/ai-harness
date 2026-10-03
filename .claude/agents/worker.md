@@ -114,41 +114,6 @@ If the contract preamble includes a `test_command`, run it after significant edi
 - If still failing after one fix attempt, note the failure in "Issues discovered" in the handoff and move on.
 - This is optional — many missions (especially harness config missions) won't have a `test_command`.
 
-## TypeSafe features
-
-If the feature spec or contract slice mentions TypeSafe, System One, Jev, or one of the primitives (Choice / Noul / Score), the **live docs are the source of truth** — do not write the integration from memory. You have no WebFetch tool; fetch with Bash:
-
-```bash
-curl -sL https://docs.typesafe.ai/llms.txt            # index — find the relevant pages
-curl -sL https://docs.typesafe.ai/<page-path>.md       # any doc page as Markdown (append .md)
-```
-
-Before writing code, read in this order:
-1. `models.md` — current model IDs, aliases, price, rate limits, context budget, SDK package names.
-2. The SDK page for the project's stack — `sdk/javascript.md`, `sdk/python.md`, or `api.md` for raw HTTP.
-3. The primitive page for each judgment you're adding — `primitives/choice.md`, `primitives/noul.md`, `primitives/score.md`.
-4. The nearest cookbook from the index (routing → `cookbooks/function_calling.md`, extraction → `cookbooks/pre_parsed_value_extraction_cookbook.md`, ranking → `cookbooks/rerank_typesafe.md`, verification → `cookbooks/citation_check.md`).
-5. `confidence.md` if the spec asks you to threshold or escalate on uncertainty.
-
-Facts from `models.md` that shape the integration (re-read the page; these can move):
-- One endpoint, `POST /v1/systemone`; the `model` field selects the model. SDKs: `@typesafe-ai/sdk` (JS) / `typesafe_sdk` (Python). Key comes from `TYPESAFE_API_KEY`.
-- Default alias is `jev-latest`, which moves on each release. If the spec has tuned confidence thresholds, **pin the versioned ID** (e.g. `jev-1.13.0`) and log the response's `model` field.
-- Context: 64k tokens for `state` + all questions, 32k for `state` + the longest question. Text only — pre-process images/audio/binaries into text before sending.
-- Billed on input tokens only; extra questions in a request cost tokens. Rate limits return `429`; SDKs retry with backoff by default.
-- No fine-tuning — domain knowledge goes in `state`, domain rules in `instructions`/`criteria`. English is the primary language; test non-English content before relying on it.
-
-Design rules that hold regardless of what the docs say about API shape:
-- Code owns the workflow; TypeSafe supplies the semantic judgment. Known rules, calculations, and exact lookups stay in code.
-- One narrow judgment per question. Put the judgment in `instructions`, the possible answers in `criteria`; include a no-match outcome when nothing may fit.
-- Ask independent questions over the same state in one request — they run in parallel.
-- API credentials stay server-side. Never ship a key to a browser bundle, never commit one, never print one.
-- `TYPESAFE_API_KEY` is exported in the user's `~/.zshrc`, which your non-interactive shell does not source. Load it per command:
-  ```bash
-  export TYPESAFE_API_KEY="$(zsh -ic 'printf "\n%s" "$TYPESAFE_API_KEY"' 2>/dev/null | tail -n1)"
-  ```
-  The `tail -n1` strips the "Restored session" banner interactive zsh prints. Check presence with `[ -n "$TYPESAFE_API_KEY" ]` — never echo the value.
-- If the docs are unreachable, say so in "Issues discovered" and build only against the installed SDK's types — do not invent version-dependent details.
-
 ## Memory
 
 You have no persistent memory. You start fresh every time. This is the design — fresh context per feature is what makes the harness work over multi-day runs.
