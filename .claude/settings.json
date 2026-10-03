@@ -84,7 +84,8 @@
       "Bash(./scripts/fleet-html.sh *)",
       "Skill(stow)",
       "Bash(./scripts/feature-dispatch.sh *)",
-      "Skill(dispatch)"
+      "Skill(dispatch)",
+      "Bash(vercel api:*)"
     ],
     "deny": [
       "Bash(rm -rf /)",

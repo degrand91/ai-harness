@@ -60,6 +60,17 @@ Only after green, or deliberately with `--abandon`. It writes its intent to `sta
 
 A failed delivery **keeps** its pending record and its worktree, and is retried.
 
+## Throughput rules (both execution models)
+
+Measured on `2026-10-02-overlay-replay-review`: 7.5 h from approval to the first build, of which more than half was waste. One `git push` stalled for 146 min on a flaky HTTPS link, the other pushes took 3 to 7 min each, two validators hit their turn limit after 54 min and returned nothing, and two follow-ups came from specs that left out real constraints. The rules below remove each cause.
+
+1. **Worktrees, not clones.** For each feature the orchestrator runs `git -C <checkout> fetch` and `git worktree add --detach <dir> <base>` (or `-b <branch>`), installs dependencies once, and gives the worker that path. Workers commit there and never clone. Validators read the same commit (a second detached worktree if they need to run anything). Remove the worktrees after the feature closes.
+2. **Workers never push; the orchestrator pushes once per feature** with `scripts/safe-push.sh <dir> origin <refspec>`, which aborts a stalled transfer and bounds every attempt. A failed push is not a failed feature: the commit is local, retry later.
+3. **Nobody blocks on CI.** Workers and validators do not run `gh run watch`. The orchestrator starts one background watch per pushed head and records the result; a red CI opens a follow-up like any other red.
+4. **Validator prompts carry a budget and a ready environment.** Scrutiny: a tool-call budget (default 35) and the worktree path. User testing: the orchestrator starts the app itself and hands over a URL, at most 3 steps, about 30 tool calls, and the interaction model quoted from the implementation. Both agents must write a verdict before the budget runs out (see their role files).
+5. **Independent features run in parallel only through `crew`.** In-process workers stay serial (the serial-spawn hook enforces it, and [parallel-worktrees.md](parallel-worktrees.md) is superseded). When a mission has features that touch disjoint files and do not need each other's output (e.g. a release-workflow change and a new runtime module), say so at intake and ask the captain whether to register the project: a registered `target_repo` runs as `crew`, where each feature is its own process in its own worktree under the concurrency limit. Registration is the captain's call, never the orchestrator's.
+6. **Specs state the real constraints up front:** who uses the output and on which platform (a portable build for a Windows tester), and fixtures captured from the real system **with exactly the options the feature sends**. Both of the measured follow-ups were missing one of these.
+
 ## Advancing
 
 Set the feature `closed`/`green`, then dispatch the next `pending` one. When none remain, move the mission to `closing` and run the full contract end to end.
