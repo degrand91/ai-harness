@@ -1,7 +1,7 @@
 ---
 name: act-on-stale-pr-state
 description: The orchestrator updates, pushes to, specs against or reports on a PR from memory of its state, while the user has already merged it from another session; the follow-up lands on a dead branch. Before any PR action, read `gh pr view <n> --json state,mergedAt` and `origin/main`.
-introduced_in_mission: 2026-09-30-extract-overlay-dedicated-repo
+introduced_in_mission: private
 tags: [orchestrator, git, github, pr, multi-session, sync]
 ---
 
@@ -12,10 +12,10 @@ hours later: a worker spec targets the PR branch, a validator reviews it, the
 orchestrator runs `gh pr update-branch`, reports "conflicts", pushes a merge
 commit. Meanwhile the user merged it minutes after it opened.
 
-Observed in this mission four times: the F004b spec targeted the merged overlay
-PR #2, F005b landed after #5 was merged, `gh pr update-branch 52` plus a pushed
-merge (916e1bb) on site PR #52 two days after its merge, and an earlier claim
-that site PR #35 was unmerged and "still live" during a cost analysis.
+Observed four times in one mission: a follow-up spec targeted an already merged
+PR, a follow-up feature landed after its PR was merged, `gh pr update-branch`
+plus a pushed merge commit hit a PR merged two days earlier, and a cost analysis
+claimed a merged PR was still open.
 
 ## Why it's tempting
 
@@ -30,10 +30,10 @@ so, and the local checkout does not change.
   `origin/main`.
 - Treat a surprising failure ("conflicts", "nothing to merge") as the signal
   that state moved, not as a problem to fix.
-- Open a PR only when everything on it is proven: this user merges a PR as soon
+- Open a PR only when everything on it is proven: some users merge a PR as soon
   as it appears, so a PR's existence must mean "ready to merge". Accumulate
   follow-ups on the branch, not in new PRs.
 
 ## Origin
 
-[post-mortem](../../missions/2026-09-30-extract-overlay-dedicated-repo/post-mortem.md).
+A mission on a private project; the post-mortem stays local.

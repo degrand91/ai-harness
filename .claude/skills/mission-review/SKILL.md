@@ -45,6 +45,8 @@ Close out a mission. Run the post-mortem ritual and distill at least one reusabl
 
    Use the templates in `learnings/README.md`. Include frontmatter (`name`, `description`, `introduced_in_mission`, `tags`). Include an `Origin` link back to this mission's post-mortem for traceability.
 
+   **This repository is public: learnings must be project-neutral.** No project, product, repo, customer or person names, no mission ids, no domain data, no URLs or ids from the target system. Set `introduced_in_mission: private` and end with `## Origin` / "A mission on a private project; the post-mortem stays local." Keep the specific version, with the real names and the post-mortem link, in `learnings/local/<same path>` (git-ignored). If a lesson cannot be stated without the project's details, it goes only in `learnings/local/`.
+
 7. **Update `learnings/INDEX.md`** with one-line entries pointing at the new file(s).
 
 8. **Update `status.json`**: set `state: "closed"` (or `"abandoned"`), `closed_at: <now UTC>`, `post_mortem_path: "post-mortem.md"`. Append to `log.md`.

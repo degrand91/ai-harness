@@ -20,6 +20,8 @@
 # temp files the spawn-lock hook leaves behind when an atomic write is interrupted
 .claude/hooks/agent-spawn-state.json.tmp.*
 missions/
+# project-specific learnings: kept personal, never published
+learnings/local/
 # validator evidence written to the harness root instead of a mission folder
 /features/
 
