@@ -1,7 +1,7 @@
 ---
 name: capabilities-cover-what-the-ui-opens
 description: In Tauri (and any capability/ACL-scoped host), unit tests that mock the host cannot see permission gaps — for every feature that opens a URL, reads a path, or invokes a plugin, the scrutiny step must diff the capability allow-list against the literal URLs/paths in the code, and a check script should enforce it structurally.
-introduced_in_mission: 2026-09-20-overlay-auto-update
+introduced_in_mission: private
 tags: [tauri, security, capabilities, scrutiny, testing]
 ---
 
@@ -13,4 +13,4 @@ Generalise: for each new host call (open URL, read/write path, HTTP fetch via pl
 
 ## Origin
 
-`missions/2026-09-20-overlay-auto-update/features/002-in-app-update-flow/scrutiny.md`. Related: the macOS replay-folder scope gap in `2026-09-19-overlay-replay-import` (same class: `$DATA/Blizzard/**`).
+A mission on a private project; the post-mortem stays local. Related: a macOS file-system scope gap for a user data folder in another private mission (same class: a path the app reads that the scope did not allow).
