@@ -2,9 +2,22 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] — 2026-10-21
+## [Unreleased] — 2026-10-21 (skills pack + PR evidence)
 
-### Added (fast path — fit the ceremony to the task)
+### Added — vendored skills (bundled, not plugin-installed)
+
+- **`scroll-craft`** (nateherk-design, MIT, upstream `75d81f7`) — build premium scroll-driven landing pages.
+- **`skill-creator`**, **`mcp-builder`**, **`webapp-testing`**, **`frontend-design`** (anthropics/skills, Apache 2.0, upstream `dbd4588`) — create/eval skills, build MCP servers, Playwright web-app testing, and non-templated UI design. Chosen to fill real gaps (extending the harness, MCP integrations, QA, UI) rather than duplicate the orchestrator/validator discipline already present.
+- Each vendored folder keeps its upstream `LICENSE`/`LICENSE.txt` and carries an `UPSTREAM.md` recording source, commit, date, dependencies, and update steps. These skills bring their own runtime deps (Node/ffmpeg/Playwright/Python) **only when invoked** — the core harness stays bash/jq/coreutils-only. Attribution in `docs/credits.md`.
+
+### Added — PR visual evidence
+
+- **`/pr-evidence`** — a harness-native skill that posts before/after visual evidence (desktop + mobile, key states, an accessibility line) of a user-observable feature to its pull request, so a human reviewer sees the change working without checking out the branch. Reuses the screenshots the `user-testing-validator` already captures; captures fresh via Playwright MCP only if none exist. Images reach the PR via an evidence commit on the branch (default) or a private gist (fallback) — never a third-party store.
+- **Wired into the process.** The feature-loop delivery step runs `/pr-evidence` for user-observable (T2) features once their PR exists; it is conditional (skipped for back-end-only changes) and non-blocking (a missing/unauthenticated `gh` or local-only delivery logs a warning, never fails a feature). Documented in `protocols/feature-loop.md`, `protocols/github-integration.md`, `CLAUDE.md` §2.5, and recorded as `evidence_posted_at` on the feature `status.json`.
+
+## [Unreleased] — 2026-10-21 (fast path — fit the ceremony to the task)
+
+### Added
 
 - **Lanes.** A mission now records a `lane` in `status.json`, decided at intake and independent of `execution`. `full` is the complete mission model (unchanged — for large, high-risk, or **unattended** work; `/afk` and away mode are always `full`). `quick` is a new lightweight lane for one small supervised change: minimal scaffold, an inline one-line `done_check` instead of a full `contract.md`, **no `DH-000` approval hold** (the supervising human's inline "go" is the gate), one worker, then conditional validation. `aside` is the trivial-edit path — the Orchestrator edits directly with no mission at all, the one sanctioned exception to "never implement directly". New skill `/quick <goal>`; `protocols/fast-path.md` is the authoritative spec.
 - **Conditional validation tiers.** Per feature, validation is chosen from the committed diff: **T0** (Orchestrator self-reviews a trivial diff — default ≤ 15 lines / ≤ 2 files, no new control flow or dependency — no validator subagent), **T1** (one Scrutiny Validator), **T2** (scrutiny + user-testing, as before). Tiers apply in **both** lanes, so a trivial feature inside a `full` mission no longer pays for two cold-context validators. Thresholds override via `config/fast-path-max-lines` (15) and `config/fast-path-max-files` (2), same single-value convention as `config/spend-cap-daily`.

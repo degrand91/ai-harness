@@ -68,6 +68,25 @@ Only after green, or deliberately with `--abandon`. It writes its intent to `sta
 
 A failed delivery **keeps** its pending record and its worktree, and is retried.
 
+### Post visual evidence to the PR
+
+Once delivery has opened a PR **and the feature was user-observable** (it ran
+user-testing validation, i.e. T2), close the evidence loop: run
+[`/pr-evidence <feature-id>`](../.claude/skills/pr-evidence/SKILL.md). It reuses
+the screenshots the user-testing-validator already captured under the feature's
+`evidence/` folder and posts a before/after evidence comment to the PR, so a human
+reviewer sees the change working without checking out the branch.
+
+This step is **non-blocking and conditional**:
+
+- Skip it for a back-end-only change (T0/T1, no user-observable surface) — there
+  is nothing to show.
+- Skip it, with a logged warning, when there is no GitHub PR (local-only delivery)
+  or `gh` is unauthenticated. Never fail or retry a feature because evidence could
+  not be posted.
+- It records `evidence_posted_at` on the feature `status.json`; that is the signal
+  that the loop treats this feature's delivery as fully complete.
+
 ## Advancing
 
 Set the feature `closed`/`green`, then dispatch the next `pending` one. When none remain, move the mission to `closing` and run the full contract end to end.

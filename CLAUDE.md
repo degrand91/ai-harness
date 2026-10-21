@@ -95,7 +95,8 @@ For each feature in order:
 7. **Decide**:
    - All validation green (T0 self-review, or every validator spawned) → mark feature complete. Advance.
    - Any validator red → open a follow-up feature using the Validator's follow-up spec. Re-enter the loop. Do **not** patch the original feature in place.
-8. **Broadcast**: `status.json` and `log.md` get updated. The `PostToolUse` hook auto-appends `log.md` on any mission-state file edit, but you still own correctness — set `status.json` deliberately.
+8. **Post evidence (user-observable features only).** Once the feature is green and its delivery has opened a PR, run [`/pr-evidence <feature-id>`](.claude/skills/pr-evidence/SKILL.md) — it reuses the screenshots the User-Testing Validator already captured and posts a before/after evidence comment to the PR, so a human reviewer sees the change working without checking out the branch. Non-blocking and conditional: skip for back-end-only changes, or when there is no GitHub PR (local-only) / `gh` is unauthenticated — never fail a feature over it. See [protocols/feature-loop.md](protocols/feature-loop.md).
+9. **Broadcast**: `status.json` and `log.md` get updated. The `PostToolUse` hook auto-appends `log.md` on any mission-state file edit, but you still own correctness — set `status.json` deliberately.
 
 ### 2.6 Close — use `/mission-review`
 - The skill runs the full contract one final time as integration check.

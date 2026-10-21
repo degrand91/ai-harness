@@ -21,7 +21,13 @@ Native Claude Code integration for the harness. Everything in here is a real Cla
 │   ├── mission-list/
 │   ├── scaffold-feature/
 │   ├── contract-check/
-│   └── log/
+│   ├── log/
+│   ├── pr-evidence/         — native: post before/after visual evidence to a PR
+│   ├── scroll-craft/        — vendored (nateherk-design, MIT) — scroll-driven sites
+│   ├── skill-creator/       — vendored (anthropics/skills, Apache-2.0)
+│   ├── mcp-builder/         — vendored (anthropics/skills, Apache-2.0)
+│   ├── webapp-testing/      — vendored (anthropics/skills, Apache-2.0)
+│   └── frontend-design/     — vendored (anthropics/skills, Apache-2.0)
 ├── hooks/                 # lifecycle enforcement
 │   ├── post-write-mission-state.sh   — auto-append mission log on edits
 │   ├── stop-turnend-guard.sh         — block session end if any mission is red
