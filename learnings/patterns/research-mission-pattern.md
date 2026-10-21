@@ -1,6 +1,6 @@
 # Pattern: Research-Only Missions
 
-**Source:** `2026-05-26-littlestorywand-ux-audit`
+**Source:** a mission on a private project
 **Confidence:** high (worked cleanly first time)
 
 ## Context

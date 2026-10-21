@@ -1,7 +1,7 @@
 ---
 name: verify-from-detached-scratch-worktree
 description: When a human shares the mission worktree and may leave uncommitted (even non-compiling) edits there, workers and validators must never stash/checkout/reset/restore/clean it — they stage only their own paths and run typecheck/lint/test/build from a detached scratch worktree at the commit under test, then remove it.
-introduced_in_mission: 2026-09-18-overlay-private-builds
+introduced_in_mission: private
 tags: [worker, validator, git, shared-worktree, verification]
 ---
 
@@ -16,4 +16,4 @@ The orchestrator applies the same rule to the integration check: run the contrac
 
 ## Origin
 
-`missions/2026-09-18-overlay-private-builds/post-mortem.md`. Related: [[host-adapter-for-native-app-validation]] (why browser validation works from a plain `dist/`), memory `feedback_shared_branch_parallel_user_commits`.
+A mission on a private project; the post-mortem stays local. Related: [[host-adapter-for-native-app-validation]] (why browser validation works from a plain `dist/`), memory `feedback_shared_branch_parallel_user_commits`.
