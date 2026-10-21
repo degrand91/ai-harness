@@ -21,7 +21,7 @@ Crewmates are separate OS processes, so the Orchestrator is **not blocked while 
 ## Quickstart
 
 ```sh
-./scripts/doctor.sh                 # check tools, create local state roots
+./scripts/setup.sh                  # check everything; --install to add missing optional tools
 claude                              # the session is the Orchestrator
 
 # register the projects this harness delivers to
@@ -102,7 +102,7 @@ Registered per project in `data/projects.md`:
 | `.claude/agents/` | orchestrator, validators, explorer, scout |
 | `.claude/skills/` | the slash-skills listed above |
 | `.claude/hooks/` | session lock, status injection, turn-end guard, watcher re-arm, compaction carry, spawn serialisation |
-| `scripts/` | you run these: `doctor` `project` `fleet` `inbox` `hold` `feature-dispatch` `learnings-curate` `lint`. Machinery: `snapshot` `watch` `afk` `notify` `lease` `memory-budget` `pr-poll` `status` `harness-audit` `learnings-index`, plus the per-mission renderers (`mission-tui` `mission-diff` `mission-checkpoint` `mission-html-report`) |
+| `scripts/` | you run these: `setup` `doctor` `project` `fleet` `inbox` `hold` `feature-dispatch` `learnings-curate` `lint`. Machinery: `snapshot` `watch` `afk` `notify` `lease` `memory-budget` `pr-poll` `status` `harness-audit` `learnings-index`, plus the per-mission renderers (`mission-tui` `mission-diff` `mission-checkpoint` `mission-html-report`) |
 | `scripts/crew/` | lifecycle: `brief` `spawn` `run` `teardown` `reconcile`. Supervision: `peek` `send` `attach`. Crewmate-side: `say` (its only way to report) `guard-pretool` (the sandbox that fires regardless of permission mode) `render` `allowlist`. Plus the tmux and fake backends |
 | `scripts/lib/` | single owners: `status-read` `registry` `holds` `crew` `session-lock` |
 | `tests/` | dependency-free suite — `bash`, `jq`, coreutils, no framework |

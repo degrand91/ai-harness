@@ -2,6 +2,16 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-10-21 (setup command + test-isolation fix)
+
+### Added
+
+- **`scripts/setup.sh` + `/setup`** — one command to make the harness ready to use. Wraps `doctor.sh` (required tools + state roots) and adds the per-skill capability deps the vendored skills introduced: node, ffmpeg, python + playwright, the Playwright MCP, and gh. `--check` (the default) reports a readiness matrix and mutates nothing; `--install` installs **only** optional capability tools via the detected package manager (winget / brew / apt / dnf / pacman / choco / scoop), echoing each command and never touching required tools; `gh auth` stays manual. Prints a per-skill READY/PARTIAL verdict so you know exactly what each skill still needs. Python is detected via a real-interpreter probe so Windows' `python3` execution-alias stub no longer reads as present. New `tests/setup.test.sh`; `setup.sh` added to the `help-and-flags` contract. README quickstart now leads with it.
+
+### Fixed
+
+- **Test-isolation leak in `tests/crew-delivery.test.sh`.** Its `work()` helper committed `feat: <task>` into whatever directory the recorded crew worktree pointed at; when the fake backend did not record one (observed on Windows), the path was empty and `git -C "" …` committed the fixture into the **real harness checkout** running the suite. `work()` now refuses any worktree path that is not a real directory under the test's temp `$home`, failing the test loudly instead of mutating the repo. Transparent in CI, where the worktree path is valid.
+
 ## [Unreleased] — 2026-10-21 (skills pack + PR evidence)
 
 ### Added — vendored skills (bundled, not plugin-installed)
