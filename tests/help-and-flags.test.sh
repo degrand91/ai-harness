@@ -11,7 +11,7 @@
 
 home="$(mktmphome)"
 HUMAN_FACING=(
-  scripts/doctor.sh scripts/project.sh scripts/fleet.sh scripts/inbox.sh
+  scripts/setup.sh scripts/doctor.sh scripts/project.sh scripts/fleet.sh scripts/inbox.sh
   scripts/hold.sh scripts/lease.sh scripts/learnings-curate.sh
   scripts/memory-budget.sh scripts/feature-dispatch.sh scripts/pr-poll.sh
   scripts/status.sh scripts/notify.sh scripts/fleet-html.sh scripts/watch.sh

@@ -22,6 +22,7 @@ Native Claude Code integration for the harness. Everything in here is a real Cla
 │   ├── scaffold-feature/
 │   ├── contract-check/
 │   ├── log/
+│   ├── setup/               — native: one-command readiness check + optional-dep install
 │   ├── pr-evidence/         — native: post before/after visual evidence to a PR
 │   ├── scroll-craft/        — vendored (nateherk-design, MIT) — scroll-driven sites
 │   ├── skill-creator/       — vendored (anthropics/skills, Apache-2.0)
