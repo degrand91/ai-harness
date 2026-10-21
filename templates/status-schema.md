@@ -8,6 +8,7 @@
 {
   "mission_id": "2026-05-23-add-oauth",
   "state": "executing",
+  "lane": "full",
   "started_at": "2026-05-23T09:00:00Z",
   "approved_at": "2026-05-23T09:30:00Z",
   "closed_at": null,
@@ -41,6 +42,26 @@
   }
 }
 ```
+
+### lane enum
+`full | quick`
+
+The **ceremony** a mission runs under — independent of `execution` (which is
+*where* the worker runs). See [protocols/fast-path.md](../protocols/fast-path.md).
+
+- `full` — intake → plan → `contract.md` → `DH-000` approval gate → feature loop →
+  `/mission-review`. For large, high-risk, or **unattended** work. Default when
+  absent.
+- `quick` — minimal scaffold, an inline one-line `done_check` instead of a
+  `contract.md`, no approval hold, one worker, conditional validation. For a
+  single small supervised change. Quick-lane missions carry a top-level
+  `"done_check": "<one line>"` and omit `plan.md` / `contract.md`.
+
+An `aside` (a trivial, reversible edit the Orchestrator makes directly) has **no
+mission folder**, so it has no `status.json` and no `lane`.
+
+Validation **tiers** (T0 self-review / T1 scrutiny / T2 scrutiny + user-testing)
+apply in **both** lanes, chosen per feature from the diff; see fast-path.md §3.
 
 ### execution enum
 `crew | subagent`

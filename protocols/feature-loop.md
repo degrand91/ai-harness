@@ -44,7 +44,15 @@ It refuses, rather than proceeding, when: the mission is not `executing`, a **bl
 
 Never from the process. Read `crew_outcome` — `done`, `failed` or `blocked` — which ignores the `idle:`/`exited:` lines the lifecycle hooks append afterwards. `blocked` is **not** terminal: file the decision, get an answer, then `crew/send.sh` the answer. Do not tear down.
 
-### Validation runs against the live worktree
+### Validation runs against the live worktree, at a tier
+
+Choose the validation **tier** from the committed diff ([fast-path.md §3](fast-path.md)):
+
+- **T0 — self-review.** Diff is trivial (default ≤ 15 lines / ≤ 2 files, no new control flow or dependency) **and** touches nothing on the always-validate list. The orchestrator reads the diff itself against the done-check and records a one-line verdict in the feature folder — no validator subagent. Valid in every lane.
+- **T1 — scrutiny.** The normal case: one Scrutiny Validator.
+- **T2 — scrutiny + user-testing.** User-observable behavior: both, together.
+
+The **always-validate floor** forces ≥ T1 regardless of diff size whenever the diff touches auth/sessions/tokens, secrets/crypto, money/billing, DB migrations or destructive data ops, file/record deletion, concurrency/transactions, CI/release config, or security-sensitive input handling. Record the tier and why.
 
 The worktree **persists through validation**. Validators stay in-process subagents of the orchestrator — read-only, adversarial, short — and are given the **diff and the handoff only**. Scrutiny and User-Testing for the same feature are spawned **together**; their verdicts are written to the feature folder by the `SubagentStop` hook. Because a crewmate is a separate process, its reasoning is physically out of reach, which turns a convention into a guarantee.
 
