@@ -92,6 +92,14 @@ work() {  # <task> <project> <mode>
     --mode "$3" --yolo off >/dev/null 2>&1
   crew spawn.sh m1 "$1" --project "$2" --mode "$3" --yolo off
   local wt; wt="$(crew_meta_get "$home" "$1" worktree)"
+  # Guard against an empty / stray worktree path. `git -C "" …` operates on the
+  # CURRENT directory -- the real harness checkout -- so an unrecorded worktree
+  # would commit this fixture's "feat: <task>" into the repo running the suite.
+  # Refuse to touch anything that is not a real directory under the temp home.
+  case "$wt" in
+    "$home"/*) [ -d "$wt" ] || { _fail "work($1): worktree $wt does not exist"; return 1; } ;;
+    *)         _fail "work($1): no worktree under \$home recorded (got '${wt:-<empty>}') — refusing to commit to cwd"; return 1 ;;
+  esac
   printf '%s\n' "$1" > "$wt/$1.txt"
   git -C "$wt" add -A
   git -C "$wt" -c user.email=c@c -c user.name=c commit -qm "feat: $1"
