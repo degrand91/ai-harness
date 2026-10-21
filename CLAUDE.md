@@ -19,25 +19,37 @@ When the user speaks to you inside this folder, classify the request:
 
 | Signal | Mode |
 |--------|------|
-| User describes a software goal ("build", "add", "fix", "migrate", "refactor X across Y") | **Mission mode** → `/mission-start` |
+| User describes a software goal ("build", "add", "fix", "migrate", "refactor X across Y") | **Mission mode** → pick a lane (see below) |
 | User asks about the harness itself, its docs, or wants to change it | **Meta mode** |
 | User asks a one-off question | **Aside mode** (answer briefly, do not start a mission) |
 
-In **Mission mode**, follow Sections 2–7 of this file.
+In **Mission mode**, pick the **lane** before anything else — the ceremony should fit the task, not the other way round. See [protocols/fast-path.md](protocols/fast-path.md):
+
+- **`aside`** — trivial, reversible, no behavior worth verifying (typo, comment, one config value, version bump). Edit directly, show the diff, no mission. This is the one place the "Orchestrator never edits code" rule yields.
+- **`quick`** — one small supervised change a single worker can finish. Minimal scaffold, an inline one-line **done-check** instead of a full `contract.md`, **no `DH-000` approval ceremony**, one worker, then conditional validation (§2.5). Use `/quick <goal>`.
+- **`full`** — large / multi-feature / high-risk / **unattended**. The complete mission model below. Use `/mission-start <goal>`.
+
+**Default by shape, and when torn pick the heavier lane.** Anything run under `/afk` or away mode is **always `full`** — the `DH-000` hold and the written contract are what keep an unsupervised restart safe. Sections 2–7 describe the `full` lane; `quick` is the same machine with the contract shrunk to one line and the approval gate replaced by an inline "go".
 
 ---
 
-## 2. Mission lifecycle (the only flow that ships code)
+## 2. Mission lifecycle (the `full` lane)
 
 ```
 INTAKE ──▶ PLAN ──▶ CONTRACT ──▶ APPROVAL GATE ──▶ FEATURE LOOP ──▶ CLOSE
                                        │                  │
                                        │                  └─▶ for each feature:
-                                       │                        worker → handoff → scrutiny → user-test → decide
+                                       │                        worker → handoff → validate (tier) → decide
                                        └─▶ this is the only mandatory human gate
 ```
 
-Each phase has a protocol document in `protocols/`. Read the relevant one before acting in that phase.
+This section is the **`full` lane** — the complete mission model, for large,
+high-risk, or unattended work. For a single small supervised change, use the
+**`quick` lane** (`/quick`): same machine, but the contract shrinks to an inline
+one-line done-check and the approval gate becomes an inline "go" — see
+[protocols/fast-path.md](protocols/fast-path.md). Validation is tiered in both
+lanes (step 2.5.4). Each phase has a protocol document in `protocols/`. Read the
+relevant one before acting in that phase.
 
 ### 2.1 Intake — use `/mission-start <goal>`
 - The skill captures the user's goal verbatim into `missions/<id>/mission.md`.
@@ -73,13 +85,18 @@ For each feature in order:
    ```
    The Worker's system prompt is loaded from `.claude/agents/worker.md` automatically. **Do not inline the worker.md content** — pass only the feature-specific task.
 3. **The handoff lands in** `missions/<id>/features/<n>/handoff.md` via the `SubagentStop` hook (it keys off `status.json.current_feature`). Read it; do not re-copy it.
-4. **Spawn a Scrutiny Validator subagent** with `subagent_type: "scrutiny-validator"`. Pass the contract slice and the diff. It does **not** see the worker's reasoning.
-5. **If the feature has user-observable behavior**, spawn a **User-Testing Validator** with `subagent_type: "user-testing-validator"` **in the same message as the Scrutiny Validator** — they are read-only and run concurrently. Pass the user-facing contract slice and the launch recipe. Then end the turn. Verdicts land in `scrutiny.md` / `user-test.md` via the hook.
-6. **Decide**:
-   - All validators green → mark feature complete. Advance.
+4. **Choose a validation tier from the committed diff** — [protocols/fast-path.md §3](protocols/fast-path.md):
+   - **T0 (self-review)** — diff is trivial (default ≤ 15 lines / ≤ 2 files, no new control flow, no new dep) **and** touches nothing in the always-validate list. You review the diff yourself against the done-check and record a one-line verdict. No validator subagent. T0 is allowed in **every** lane, including a trivial feature inside a `full` mission.
+   - **T1 (scrutiny)** — the normal case: logic changed or the diff is non-trivial. Spawn one Scrutiny Validator.
+   - **T2 (scrutiny + user-testing)** — user-observable behavior.
+   - **Always-validate floor:** a diff touching auth/sessions/tokens, secrets/crypto, money/billing, DB migrations or destructive data ops, file/record deletion, concurrency/transactions, CI/release config, or security-sensitive input handling is **never** T0 — run at least T1, regardless of size. Record the tier and why in `log.md`.
+5. **Spawn a Scrutiny Validator subagent** (T1/T2) with `subagent_type: "scrutiny-validator"`. Pass the contract slice and the diff. It does **not** see the worker's reasoning.
+6. **If the feature has user-observable behavior (T2)**, spawn a **User-Testing Validator** with `subagent_type: "user-testing-validator"` **in the same message as the Scrutiny Validator** — they are read-only and run concurrently. Pass the user-facing contract slice and the launch recipe. Then end the turn. Verdicts land in `scrutiny.md` / `user-test.md` via the hook.
+7. **Decide**:
+   - All validation green (T0 self-review, or every validator spawned) → mark feature complete. Advance.
    - Any validator red → open a follow-up feature using the Validator's follow-up spec. Re-enter the loop. Do **not** patch the original feature in place.
-7. **Post evidence (user-observable features only).** Once the feature is green and its delivery has opened a PR, run [`/pr-evidence <feature-id>`](.claude/skills/pr-evidence/SKILL.md) — it reuses the screenshots the User-Testing Validator already captured and posts a before/after evidence comment to the PR, so a human reviewer sees the change working without checking out the branch. Non-blocking and conditional: skip for back-end-only changes, or when there is no GitHub PR (local-only) / `gh` is unauthenticated — never fail a feature over it. See [protocols/feature-loop.md](protocols/feature-loop.md).
-8. **Broadcast**: `status.json` and `log.md` get updated. The `PostToolUse` hook auto-appends `log.md` on any mission-state file edit, but you still own correctness — set `status.json` deliberately.
+8. **Post evidence (user-observable features only).** Once the feature is green and its delivery has opened a PR, run [`/pr-evidence <feature-id>`](.claude/skills/pr-evidence/SKILL.md) — it reuses the screenshots the User-Testing Validator already captured and posts a before/after evidence comment to the PR, so a human reviewer sees the change working without checking out the branch. Non-blocking and conditional: skip for back-end-only changes, or when there is no GitHub PR (local-only) / `gh` is unauthenticated — never fail a feature over it. See [protocols/feature-loop.md](protocols/feature-loop.md).
+9. **Broadcast**: `status.json` and `log.md` get updated. The `PostToolUse` hook auto-appends `log.md` on any mission-state file edit, but you still own correctness — set `status.json` deliberately.
 
 ### 2.6 Close — use `/mission-review`
 - The skill runs the full contract one final time as integration check.
@@ -200,8 +217,10 @@ Three layers, all consulted at intake:
 
 ## 9. Hard rules
 
-- **Never let the Orchestrator implement a feature directly.** Spawn a Worker.
-- **Never write code before the validation contract exists and is approved.**
+- **Never let the Orchestrator implement a feature directly** — spawn a Worker. The *only* exception is the `aside` lane (a trivial, reversible, no-behavior edit); a `quick`-lane change still goes to a worker.
+- **Never write code before the definition of "done" exists and is accepted.** In `full` that is the approved `contract.md`; in `quick` it is the inline one-line done-check the user said "go" to. There is no lane where a worker runs before done is defined.
+- **Never skip validation on the always-validate surfaces** (auth, secrets, money, migrations, destructive ops, concurrency, CI/release, security-sensitive input) — those are never T0, regardless of diff size or lane. See [protocols/fast-path.md §3](protocols/fast-path.md).
+- **Never run an unattended (`/afk` / away mode) mission in the `quick` lane.** Unattended ⇒ `full`.
 - **Never run two Workers in parallel.**
 - **Never poll a running subagent.** End the turn and let the completion notification wake you.
 - **Never let a Validator see the Worker's reasoning.** It sees the contract and the diff.

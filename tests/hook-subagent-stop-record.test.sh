@@ -75,8 +75,8 @@ assert_eq "$before" "$(jq -S .tokens "$sf")"
 # --- persistence: the verdict lands on disk without an orchestrator turn -----
 phome="$(mktmphome)"
 pd="$(mkmission "$phome" 2026-04-03-m '{"state":"executing","current_feature":"F002-followup-1","features":[],"tokens":'"$TOKENS"'}')"
-mkdir -p "$pd/features/002-replay-import-ui" "$pd/features/002-followup-1-lazy-chunk"
-printf '{"id":"F002"}\n' > "$pd/features/002-replay-import-ui/status.json"
+mkdir -p "$pd/features/002-import-ui" "$pd/features/002-followup-1-lazy-chunk"
+printf '{"id":"F002"}\n' > "$pd/features/002-import-ui/status.json"
 printf '{"feature_id":"F002-followup-1"}\n' > "$pd/features/002-followup-1-lazy-chunk/status.json"
 msg_pl() { jq -cn --arg t "$1" --arg m "$2" '{hook_event_name:"SubagentStop",agent_type:$t,last_assistant_message:$m}'; }
 
@@ -86,7 +86,7 @@ assert_rc 0 "$HOOK_RC"
 f="$pd/features/002-followup-1-lazy-chunk/scrutiny.md"
 assert_file_exists "$f"
 assert_eq "## Feature: lazy-chunk — Scrutiny Verdict: green" "$(head -n1 "$f")"
-assert_file_missing "$pd/features/002-replay-import-ui/scrutiny.md"
+assert_file_missing "$pd/features/002-import-ui/scrutiny.md"
 assert_contains "$(tail -n1 "$pd/log.md")" "scrutiny.md"
 
 it "routes worker → handoff.md and user-testing → user-test.md"

@@ -1,10 +1,10 @@
 # Anti-pattern: Telling a worker to change links without prescribing the framework's idiom
 
-**Seen in:** `2026-06-10-add-about-us-section`, F002 → F003.
+**Seen in:** a mission on a private project, F002 → F003.
 
 ## What happened
 
-The orchestrator's F002 spec told the worker to change the nav's bare hash anchors (`#approach`) to root-relative form (`/#approach`, `/#top`) so they'd work from a non-home route. The worker did exactly that — using plain `<a href="/#top">`. In Next.js, a literal `<a>` pointing at an internal route trips the lint rule `@next/next/no-html-link-for-pages`. Result: a lint regression (C-003 red) and a whole extra follow-up feature (F003) to swap in `next/link`.
+The orchestrator's F002 spec told the worker to change the nav's bare hash anchors (`#section`) to root-relative form (`/#section`, `/#top`) so they'd work from a non-home route. The worker did exactly that — using plain `<a href="/#top">`. In Next.js, a literal `<a>` pointing at an internal route trips the lint rule `@next/next/no-html-link-for-pages`. Result: a lint regression (C-003 red) and a whole extra follow-up feature (F003) to swap in `next/link`.
 
 ## Why it's a trap
 
