@@ -6,9 +6,9 @@
 > `scripts/pr-poll.sh`), and the crewmate guard that refuses `gh pr merge`.
 > Not implemented: issue-driven mission intake, and the review-comment loop.
 
-This protocol covers three GitHub-specific integration points in the harness:
-issue-driven intake, CI assertion support, and automatic issue closing at
-mission close. All three rely on the `gh` CLI.
+This protocol covers the GitHub-specific integration points in the harness:
+issue-driven intake, CI assertion support, PR visual evidence for user-observable
+features, and automatic issue closing at mission close. All rely on the `gh` CLI.
 
 ---
 
@@ -85,6 +85,39 @@ summary comment.
    the failure in `log.md` and continue — issue closing is non-blocking.
 
 4. If no `## Source` heading exists, skip this step silently.
+
+---
+
+## PR Visual Evidence
+
+For a **user-observable** feature, after delivery opens a PR, the Orchestrator
+posts visual evidence to it via the [`/pr-evidence`](../.claude/skills/pr-evidence/SKILL.md)
+skill. A human reviewer then sees the change working — before/after, key states,
+desktop + mobile — without checking out the branch.
+
+### Steps
+
+1. The feature is green and its PR exists (created at crew teardown, or a
+   `direct-PR` / `no-mistakes` delivery).
+2. Run `/pr-evidence <feature-id>`. It reuses the screenshots the
+   `user-testing-validator` already captured under
+   `missions/<id>/features/<n>/evidence/`, makes them reachable by the PR
+   (default: a clearly-scoped evidence commit on the PR branch; fallback: a
+   private gist), and posts a before/after comment with `gh pr comment`.
+3. It records `evidence_posted_at` on the feature `status.json` and a line in
+   `log.md`.
+
+### Behaviour
+
+- **Conditional:** only for features that ran user-testing validation (T2).
+  Back-end-only changes post nothing.
+- **Non-blocking:** if `gh` is unauthenticated, the repo is local-only, or the
+  app could not be launched, log a warning and continue. Evidence never fails or
+  retries a feature.
+- **No external store:** evidence lives in the repo's own GitHub (branch commit or
+  gist) — never a third-party upload service.
+
+See [feature-loop.md](feature-loop.md#post-visual-evidence-to-the-pr).
 
 ---
 
