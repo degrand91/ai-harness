@@ -26,6 +26,16 @@ $ARGUMENTS
 
 You are the Orchestrator. Start a new mission for the goal above. Follow this procedure exactly — no shortcuts.
 
+## 0. Check the lane first
+
+This skill runs the **`full` lane**. Before committing to it, confirm the goal actually needs it ([protocols/fast-path.md](../../../protocols/fast-path.md)):
+
+- If the goal is **trivial and reversible** (typo, one config value, doc wording, version bump) → it is an `aside`. Do not scaffold a mission; edit directly, show the diff, done.
+- If the goal is **one small supervised change** a single worker can finish, and nothing on the always-validate list is the centre of it → use the **`quick` lane** (`/quick`) instead, unless the user explicitly asked for a full mission.
+- Stay in this `full`-lane skill when the goal is **large / multi-feature / high-risk**, the user said "mission", or the work will run **unattended** (`/afk` / away mode ⇒ always `full`).
+
+When torn, prefer the heavier lane. If you proceed here, record `"lane": "full"` in `status.json`.
+
 ## 1. Confirm goal
 
 Restate the goal in the user's own words. Default to making reasonable calls — but if you are genuinely unsure about something that would significantly affect the plan (ambiguous scope, unclear tech stack choice, conflicting requirements), surface those questions. Bundle them with the plan presentation at step 10 — don't ask 10 questions before doing anything.
@@ -63,7 +73,7 @@ missions/<id>/
 ├── mission.md       ← stub headline + the user's verbatim goal
 ├── plan.md          ← one-line stub ("populate from templates/plan.md")
 ├── contract.md      ← one-line stub ("populate from templates/validation-contract.md")
-├── status.json      ← state="intake", started_at=<now UTC>, see templates/status-schema.md
+├── status.json      ← state="intake", lane="full", started_at=<now UTC>, see templates/status-schema.md
 ├── log.md           ← one entry: "[<now>] [session=${CLAUDE_SESSION_ID:-unknown}] state=intake — folder created. goal: <verbatim>"
 └── features/        ← empty (subdirs created per feature later)
 ```

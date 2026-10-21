@@ -40,6 +40,7 @@ These documents govern the sequencing and coordination rules for mission executi
 | File | Description |
 |------|-------------|
 | [lifecycle.md](lifecycle.md) | End-to-end mission phases: intake → plan → contract → approval → feature loop → close |
+| [fast-path.md](fast-path.md) | Lanes (`aside`/`quick`/`full`) that fit ceremony to task size, and conditional validation tiers (T0/T1/T2) with an always-validate floor |
 | [handoff.md](handoff.md) | Handoff format contract between Worker and Orchestrator; required sections and failure modes |
 | [validation-contract.md](validation-contract.md) | How to write a validation contract: executable assertions, contract slices, amendment rules |
 | [continuity.md](continuity.md) | The turn-end guard and the watcher: what refuses a stop, what wakes a session, and every rail on both |

@@ -2,6 +2,15 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-10-21
+
+### Added (fast path — fit the ceremony to the task)
+
+- **Lanes.** A mission now records a `lane` in `status.json`, decided at intake and independent of `execution`. `full` is the complete mission model (unchanged — for large, high-risk, or **unattended** work; `/afk` and away mode are always `full`). `quick` is a new lightweight lane for one small supervised change: minimal scaffold, an inline one-line `done_check` instead of a full `contract.md`, **no `DH-000` approval hold** (the supervising human's inline "go" is the gate), one worker, then conditional validation. `aside` is the trivial-edit path — the Orchestrator edits directly with no mission at all, the one sanctioned exception to "never implement directly". New skill `/quick <goal>`; `protocols/fast-path.md` is the authoritative spec.
+- **Conditional validation tiers.** Per feature, validation is chosen from the committed diff: **T0** (Orchestrator self-reviews a trivial diff — default ≤ 15 lines / ≤ 2 files, no new control flow or dependency — no validator subagent), **T1** (one Scrutiny Validator), **T2** (scrutiny + user-testing, as before). Tiers apply in **both** lanes, so a trivial feature inside a `full` mission no longer pays for two cold-context validators. Thresholds override via `config/fast-path-max-lines` (15) and `config/fast-path-max-files` (2), same single-value convention as `config/spend-cap-daily`.
+- **Always-validate floor.** A diff touching auth/sessions/tokens, secrets/crypto, money/billing, DB migrations or destructive data ops, file/record deletion, concurrency/transactions, CI/release config, or security-sensitive input handling is **never** T0 regardless of size or lane — the whole safety argument for the fast path: speed removes validation only where a mistake is cheap to undo. The orchestrator records the chosen tier and why in `log.md`.
+- Wired through `CLAUDE.md` (§1 lane selection, §2 lifecycle, §2.5 tiered validation, §9 hard rules), `.claude/agents/orchestrator.md`, `protocols/feature-loop.md`, `.claude/skills/mission-start/SKILL.md` (lane check at intake), the new `.claude/skills/quick/SKILL.md`, and `templates/status-schema.md` (`lane` enum, `done_check`).
+
 ## [Unreleased] — 2026-09-21
 
 ### Changed (throughput review — "slow but accurate")
