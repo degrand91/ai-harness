@@ -2,6 +2,12 @@
 
 All notable changes to the harness are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/), and the harness adheres loosely to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] — 2026-10-27 (ponytail implementation discipline)
+
+### Added
+
+- **`ponytail`** — the harness's implementation discipline: solve the whole problem with the least new code (reuse before adding, no dependency for a few lines, deletion beats addition), while never cutting validation, error handling, security, accessibility, or the contract slice. Baked into `.claude/agents/worker.md` so it governs **every** implementation (workers run `omitClaudeMd` and can't load a skill, so the operative copy lives in the role prompt); the `ponytail` skill is the canonical reference. Cuts code volume where the fast-path lanes cut ceremony — they compose.
+
 ## [Unreleased] — 2026-10-21 (setup command + test-isolation fix)
 
 ### Added
